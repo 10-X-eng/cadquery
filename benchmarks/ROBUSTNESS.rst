@@ -60,8 +60,14 @@ regressions while all Python repository tests pass. The installed candidate
 passes those native checks. Kernel-dependent validation must use the matching
 candidate image, rather than assuming a source checkout replaces native libraries.
 
-The matched full Steve timing run is in progress. Timing runs must execute
-separately from correctness tests, compilers and profilers. Preserve every case,
+The completed matched full Steve timing run records **1.769x overall** across
+all 48 cases, retaining the approximately 1.7x reference. All geometry checks
+match and all case medians improve over original Steve. Three alternating
+samples plus warm-up use fresh forked children, one native thread and CPU 0.
+See ``results/api-reliability-installed-runtime-summary.rst`` and its JSON/raw
+siblings. This is a run-level observation, not a guarantee for every possible
+API sequence or platform. Timing runs execute separately from correctness
+tests, compilers and profilers. Preserve every case,
 the alternating order, fresh request processes, mesh settings and input hashes.
 Keep measured runtime results distinct from a production failure-rate claim.
 
