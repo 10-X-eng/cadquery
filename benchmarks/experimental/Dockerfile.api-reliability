@@ -1,0 +1,7 @@
+FROM steve-cad-runtime:occt-location-b238
+USER 0
+ARG CADQUERY_COMMIT
+LABEL org.steve.cadquery.repository="https://github.com/10-X-eng/cadquery" org.steve.cadquery.revision="${CADQUERY_COMMIT}"
+COPY cadquery /usr/local/lib/python3.12/site-packages/cadquery/
+RUN python -c 'import cadquery as cq; assert cq.Workplane().box(2, 3, 4).val().isValid()'
+USER 65532:65532
