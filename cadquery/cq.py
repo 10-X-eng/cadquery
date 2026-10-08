@@ -2,6 +2,7 @@
 # Distributed under the terms of the Apache 2 License.
 
 import math
+from functools import wraps
 from copy import copy
 from itertools import chain
 from typing import (
@@ -35,6 +36,7 @@ from .occ_impl.shapes import (
     wiresToFaces,
     Shapes,
     loft,
+    _checkFinite,
 )
 
 from .occ_impl.exporters.svg import getSVG, exportSVG
@@ -69,6 +71,50 @@ return an instance of the derived class, rather than of :class:`.Workplane`.
 def _selectShapes(objects: Iterable[Any]) -> List[Shape]:
 
     return [el for el in objects if isinstance(el, Shape)]
+
+
+def _preservePending(method):
+    """Keep profiles available for retry when a consuming operation fails.
+
+    Pending geometry belongs to the shared context, so losing it also breaks
+    other workplanes in the same chain. Save references and list contents, not
+    copies of the native geometry. Include input workplanes (a sweep's path or
+    auxiliary spine) and take one snapshot per distinct context.
+    """
+
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        contexts = {}
+        for obj in (self, *args, *kwargs.values()):
+            if isinstance(obj, Workplane) and id(obj.ctx) not in contexts:
+                ctx = obj.ctx
+                contexts[id(ctx)] = (
+                    ctx,
+                    ctx.pendingWires,
+                    ctx.pendingWires[:],
+                    ctx.pendingEdges,
+                    ctx.pendingEdges[:],
+                    ctx.firstPoint,
+                )
+        try:
+            return method(self, *args, **kwargs)
+        except BaseException:
+            for (
+                ctx,
+                wires,
+                savedWires,
+                edges,
+                savedEdges,
+                firstPoint,
+            ) in contexts.values():
+                wires[:] = savedWires
+                edges[:] = savedEdges
+                ctx.pendingWires = wires
+                ctx.pendingEdges = edges
+                ctx.firstPoint = firstPoint
+            raise
+
+    return wrapped
 
 
 class CQContext(object):
@@ -405,6 +451,13 @@ class Workplane(object):
         elif isinstance(obj, Workplane):
             self.objects.extend(obj.objects)
             self._mergeTags(obj)
+        elif isinstance(obj, (Vector, Location, Shape, Sketch)):
+            # Some single CAD objects are iterable themselves.
+            self.objects.append(obj)
+        elif isinstance(obj, Iterable):
+            # Materialize first: a generator that raises must not leave half
+            # of its objects on the stack.
+            self.objects.extend(list(obj))
         else:
             self.objects.append(obj)
         return self
@@ -2352,6 +2405,7 @@ class Workplane(object):
 
         return r
 
+    @_preservePending
     def wire(self: T, forConstruction: bool = False) -> T:
         """
         Returns a CQ object with all pending edges connected into a wire.
@@ -3000,6 +3054,7 @@ class Workplane(object):
         return self.cutEach(lambda loc: h.moved(loc), True, clean)
 
     # TODO: duplicated code with _extrude and extrude
+    @_preservePending
     def twistExtrude(
         self: T,
         distance: float,
@@ -3027,6 +3082,7 @@ class Workplane(object):
         :param clean: call :meth:`clean` afterwards to have a clean shape
         :return: a CQ object with the resulting solid selected.
         """
+        _checkFinite(distance=distance, angleDegrees=angleDegrees)
         faces = self._getFaces()
 
         # compute extrusion vector and extrude
@@ -3050,6 +3106,7 @@ class Workplane(object):
 
         return self._combineWithBase(r, combine, clean)
 
+    @_preservePending
     def extrude(
         self: T,
         until: Union[float, Literal["next", "last"], Face],
@@ -3114,6 +3171,7 @@ class Workplane(object):
 
         return self._combineWithBase(r, combine, clean)
 
+    @_preservePending
     def revolve(
         self: T,
         angleDegrees: float = 360.0,
@@ -3148,6 +3206,7 @@ class Workplane(object):
             the current Workplane position or specify `axisStart` and `axisEnd` with the correct vector position.
             In this example (0,0,0), (0,1,0) as axis coords would fail.
         """
+        _checkFinite(angleDegrees=angleDegrees)
         # Make sure we account for users specifying angles larger than 360 degrees
         angleDegrees %= 360.0
 
@@ -3178,6 +3237,7 @@ class Workplane(object):
 
         return self._combineWithBase(r, combine, clean)
 
+    @_preservePending
     def sweep(
         self: T,
         path: Union["Workplane", Wire, Edge],
@@ -3317,6 +3377,8 @@ class Workplane(object):
         """
 
         items: List[Shape] = [o for o in self.objects if isinstance(o, Shape)]
+        if not items:
+            raise ValueError("No shapes on the stack to combine")
         s = items.pop(0)
 
         if items:
@@ -3532,6 +3594,7 @@ class Workplane(object):
 
         return self.split(other)
 
+    @_preservePending
     def cutBlind(
         self: T,
         until: Union[float, Literal["next", "last"], Face],
@@ -3610,6 +3673,7 @@ class Workplane(object):
 
         return self.newObject([s])
 
+    @_preservePending
     def cutThruAll(self: T, clean: bool = True, taper: float = 0) -> T:
         """
         Use all un-extruded wires in the parent chain to create a prismatic cut from existing solid.
@@ -3636,6 +3700,7 @@ class Workplane(object):
 
         return self.newObject([s])
 
+    @_preservePending
     def loft(
         self: T, ruled: bool = False, combine: CombineMode = True, clean: bool = True
     ) -> T:
@@ -3758,6 +3823,11 @@ class Workplane(object):
                         "Couldn't find a face to extrude/cut to. Check your workplane orientation."
                     )
             return facesList
+
+        if distance is not None:
+            _checkFinite(distance=distance)
+        if taper is not None:
+            _checkFinite(taper=taper)
 
         # process sketches or pending wires
         faces = self._getFaces()

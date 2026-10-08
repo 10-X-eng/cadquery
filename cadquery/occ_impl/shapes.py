@@ -337,7 +337,7 @@ from OCP.GeomAdaptor import GeomAdaptor_Surface
 
 from OCP.OSD import OSD_ThreadPool
 
-from math import pi, sqrt, inf, radians, cos, tan
+from math import pi, sqrt, inf, radians, cos, tan, isfinite
 
 import warnings
 
@@ -345,6 +345,14 @@ from ..utils import deprecate
 
 Real = float | int
 GlueLiteral = Literal["partial", "full", None]
+
+
+def _checkFinite(**parameters: float) -> None:
+    """Reject nonfinite modeling parameters before entering native builders."""
+    for name, value in parameters.items():
+        if not isfinite(value):
+            raise ValueError(f"{name} must be finite")
+
 
 TOLERANCE = 1e-6
 
@@ -2772,6 +2780,7 @@ class Edge(Shape, Mixin1D):
         angle2: float = 360,
         orientation: bool = True,
     ) -> Edge:
+        _checkFinite(radius=radius, angle1=angle1, angle2=angle2)
         pnt = Vector(pnt)
         dir = Vector(dir)
 
@@ -4307,7 +4316,9 @@ class Mixin3D(object):
         thruAll: bool = True,
         additive: bool = True,
     ) -> TS:
-
+        _checkFinite(taper=taper)
+        if depth is not None:
+            _checkFinite(depth=depth)
         shape: TopoDS_Shape | TopoDS_Solid = self.wrapped
         for face in faces:
             feat = BRepFeat_MakeDPrism(
@@ -4371,6 +4382,7 @@ class Solid(Shape, Mixin3D):
         makeBox(length,width,height,[pnt,dir]) -- Make a box located in pnt with the dimensions (length,width,height)
         By default pnt=Vector(0,0,0) and dir=Vector(0,0,1)
         """
+        _checkFinite(length=length, width=width, height=height)
         return cls(
             BRepPrimAPI_MakeBox(
                 gp_Ax2(Vector(pnt).toPnt(), Vector(dir).toDir()), length, width, height
@@ -4392,6 +4404,9 @@ class Solid(Shape, Mixin3D):
         By default pnt=Vector(0,0,0),
         dir=Vector(0,0,1) and angle=360
         """
+        _checkFinite(
+            radius1=radius1, radius2=radius2, height=height, angleDegrees=angleDegrees
+        )
         return cls(
             BRepPrimAPI_MakeCone(
                 gp_Ax2(Vector(pnt).toPnt(), Vector(dir).toDir()),
@@ -4416,6 +4431,7 @@ class Solid(Shape, Mixin3D):
         Make a cylinder with a given radius and height
         By default pnt=Vector(0,0,0),dir=Vector(0,0,1) and angle=360
         """
+        _checkFinite(radius=radius, height=height, angleDegrees=angleDegrees)
         return cls(
             BRepPrimAPI_MakeCylinder(
                 gp_Ax2(Vector(pnt).toPnt(), Vector(dir).toDir()),
@@ -4441,6 +4457,12 @@ class Solid(Shape, Mixin3D):
         By default pnt=Vector(0,0,0),dir=Vector(0,0,1),angle1=0
         ,angle1=360 and angle=360
         """
+        _checkFinite(
+            radius1=radius1,
+            radius2=radius2,
+            angleDegrees1=angleDegrees1,
+            angleDegrees2=angleDegrees2,
+        )
         return cls(
             BRepPrimAPI_MakeTorus(
                 gp_Ax2(Vector(pnt).toPnt(), Vector(dir).toDir()),
@@ -4487,7 +4509,7 @@ class Solid(Shape, Mixin3D):
         Make a wedge located in pnt
         By default pnt=Vector(0,0,0) and dir=Vector(0,0,1)
         """
-
+        _checkFinite(dx=dx, dy=dy, dz=dz, xmin=xmin, zmin=zmin, xmax=xmax, zmax=zmax)
         return cls(
             BRepPrimAPI_MakeWedge(
                 gp_Ax2(Vector(pnt).toPnt(), Vector(dir).toDir()),
@@ -4515,6 +4537,12 @@ class Solid(Shape, Mixin3D):
         Make a sphere with a given radius
         By default pnt=Vector(0,0,0), dir=Vector(0,0,1), angle1=0, angle2=90 and angle3=360
         """
+        _checkFinite(
+            radius=radius,
+            angleDegrees1=angleDegrees1,
+            angleDegrees2=angleDegrees2,
+            angleDegrees3=angleDegrees3,
+        )
         return cls(
             BRepPrimAPI_MakeSphere(
                 gp_Ax2(Vector(pnt).toPnt(), Vector(dir).toDir()),
@@ -4573,6 +4601,15 @@ class Solid(Shape, Mixin3D):
 
         vecNormal_ = Vector(vecNormal)
         vecCenter_ = Vector(vecCenter)
+        _checkFinite(
+            vecNormal_x=vecNormal_.x,
+            vecNormal_y=vecNormal_.y,
+            vecNormal_z=vecNormal_.z,
+            vecCenter_x=vecCenter_.x,
+            vecCenter_y=vecCenter_.y,
+            vecCenter_z=vecCenter_.z,
+            angleDegrees=angleDegrees,
+        )
 
         # make straight spine
         straight_spine_e = Edge.makeLine(vecCenter_, vecCenter_.add(vecNormal_))
@@ -4662,6 +4699,12 @@ class Solid(Shape, Mixin3D):
     ) -> Solid:
 
         vecNormal_ = Vector(vecNormal)
+        _checkFinite(
+            vecNormal_x=vecNormal_.x,
+            vecNormal_y=vecNormal_.y,
+            vecNormal_z=vecNormal_.z,
+            taper=taper,
+        )
 
         if taper == 0:
             prism_builder: Any = BRepPrimAPI_MakePrism(
@@ -4769,7 +4812,7 @@ class Solid(Shape, Mixin3D):
     def revolve(
         cls, face: Face, angleDegrees: Real, axisStart: VectorLike, axisEnd: VectorLike,
     ) -> Solid:
-
+        _checkFinite(angleDegrees=angleDegrees)
         v1 = Vector(axisStart)
         v2 = Vector(axisEnd)
         v2 = v2 - v1
