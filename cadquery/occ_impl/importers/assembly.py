@@ -27,6 +27,7 @@ from OCP.PCDM import PCDM_ReaderStatus
 from ..assembly import AssemblyProtocol, Color, Material
 from ..geom import Location
 from ..shapes import Shape
+from ..step_materials import normalize_imported_densities
 from ...types import UnitLiterals
 
 
@@ -45,7 +46,7 @@ def _get_name(label: TDF_Label) -> str:
     return rv
 
 
-def _get_material(label: TDF_Label) -> Material | None:
+def _get_material(label: TDF_Label, step: bool = False) -> Material | None:
     """
     Helper to get the material for a given label.
     """
@@ -65,7 +66,7 @@ def _get_material(label: TDF_Label) -> Material | None:
         name = material_attr.GetName().ToCString()
         description = material_attr.GetDescription().ToCString()
         density = material_attr.GetDensity()
-        density_unit = material_attr.GetDensValType().ToCString()
+        density_unit = "g/cm^3" if step else material_attr.GetDensValType().ToCString()
 
         rv = Material(
             name=name,
@@ -158,6 +159,7 @@ def importStep(assy: AssemblyProtocol, path: str, unit: UnitLiterals = "MM"):
     status = step_reader.ReadFile(path)
     if status != IFSelect_RetDone:
         raise ValueError(f"Error reading STEP file: {path}")
+    normalize_imported_densities(step_reader.Reader().StepModel())
 
     # Document that the step file will be read into
     doc = TDocStd_Document(TCollection_ExtendedString("XmXCAF"))
@@ -165,7 +167,7 @@ def importStep(assy: AssemblyProtocol, path: str, unit: UnitLiterals = "MM"):
     # Transfer the contents of the STEP file to the document
     step_reader.Transfer(doc)
 
-    _importDoc(doc, assy)
+    _importDoc(doc, assy, step=True)
 
 
 def importXbf(assy: AssemblyProtocol, path: str):
@@ -228,7 +230,7 @@ def importXml(assy: AssemblyProtocol, path: str):
     _importDoc(doc, assy)
 
 
-def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol):
+def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol, step: bool = False):
     def _process_label(lbl: TDF_Label, parent: AssemblyProtocol):
         """
         Recursive method to process the assembly in a top-down manner.
@@ -238,27 +240,59 @@ def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol):
         comp_labels = TDF_LabelSequence()
         shape_tool.GetComponents_s(lbl, comp_labels)
 
+        components = []
         for i in range(comp_labels.Length()):
             comp_label = comp_labels.Value(i + 1)
             comp_name = _get_name(comp_label)
+            ref_label = TDF_Label()
+            is_reference = shape_tool.IsReference_s(comp_label)
+            if is_reference:
+                shape_tool.GetReferredShape_s(comp_label, ref_label)
+            is_assembly = is_reference and shape_tool.IsAssembly_s(ref_label)
+            ref_name = _get_name(ref_label) if is_assembly else comp_name
+            components.append(
+                (comp_label, comp_name, ref_label, ref_name, is_assembly, is_reference)
+            )
+
+        # Reserve source names before assigning suffixes: an earlier duplicate
+        # must not take a later component's explicit name (e.g. wheel_1).
+        reserved = {entry[3] for entry in components if entry[3]}
+        suffixes: dict[str, int] = {}
+
+        def unique_name(name: str) -> str:
+            base = name or "unnamed"
+            if base not in parent.objects and (name or base not in reserved):
+                return base
+            suffix = suffixes.get(base, 1)
+            candidate = f"{base}_{suffix}"
+            while candidate in parent.objects or candidate in reserved:
+                suffix += 1
+                candidate = f"{base}_{suffix}"
+            suffixes[base] = suffix + 1
+            return candidate
+
+        for (
+            comp_label,
+            comp_name,
+            ref_label,
+            ref_name,
+            is_assembly,
+            is_reference,
+        ) in components:
 
             # Get the location of the component label
             loc = shape_tool.GetLocation_s(comp_label)
             cq_loc = Location(loc) if loc else Location()
 
-            if shape_tool.IsReference_s(comp_label):
-                ref_label = TDF_Label()
-                shape_tool.GetReferredShape_s(comp_label, ref_label)
+            if is_reference:
 
                 # get (if it exists the color of the comp label)
                 color = _get_ref_color(comp_label)
-                material = _get_material(comp_label)
+                material = _get_material(comp_label, step)
 
-                if shape_tool.IsAssembly_s(ref_label):
-                    # Find the name of this referenced part
-                    ref_name = _get_name(ref_label)
-
-                    sub_assy = assy.__class__(name=ref_name)
+                if is_assembly:
+                    name = unique_name(ref_name)
+                    sub_assy = assy.__class__(name=name)
 
                     # Recursively process subassemblies
                     _ = _process_label(ref_label, sub_assy)
@@ -267,15 +301,15 @@ def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol):
                     parent.add(
                         sub_assy,
                         loc=cq_loc,
-                        name=ref_name,
+                        name=name,
                         color=color,
                         material=material,
+                        metadata=(
+                            {"original_name": ref_name} if name != ref_name else None
+                        ),
                     )
 
                 elif shape_tool.IsSimpleShape_s(ref_label):
-                    # Find the name of this referenced part
-                    ref_name = _get_name(comp_label)
-
                     # A single shape needs to be added to the assembly
                     final_shape = shape_tool.GetShape_s(ref_label)
                     cq_shape = Shape.cast(final_shape)
@@ -285,7 +319,7 @@ def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol):
                         color = _get_shape_color(final_shape, color_tool)
 
                     if material is None:
-                        material = _get_material(ref_label)
+                        material = _get_material(ref_label, step)
 
                     # this if/else is needed to handle different structures of STEP files
                     # "*"/"*_part" based naming is the default structure produced by CQ
@@ -298,17 +332,25 @@ def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol):
                         # change the current assy to handle subshape data
                         current = parent
                     else:
+                        name = unique_name(comp_name)
                         tmp = assy.__class__(
                             cq_shape,
                             loc=cq_loc,
-                            name=comp_name,
+                            name=name,
                             color=color,
                             material=material,
                         )
-                        parent.add(tmp)
+                        parent.add(
+                            tmp,
+                            metadata=(
+                                {"original_name": comp_name}
+                                if name != comp_name
+                                else None
+                            ),
+                        )
 
                         # change the current assy to handle subshape data
-                        current = cast(AssemblyProtocol, parent[comp_name])
+                        current = cast(AssemblyProtocol, parent[name])
 
                     # iterate over subshape and handle names, layers and colors
                     subshape_labels = TDF_LabelSequence()
@@ -342,7 +384,7 @@ def _importDoc(doc: TDocStd_Document, assy: AssemblyProtocol):
 
                         # try the instance first
                         color = _get_ref_color(child_label)
-                        material = _get_material(child_label)
+                        material = _get_material(child_label, step)
 
                         if color:
                             # Save the color info via the assembly subshape mechanism

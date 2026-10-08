@@ -20,7 +20,7 @@ from pyparsing import (
     infix_notation,
     opAssoc,
 )
-from functools import reduce
+from functools import lru_cache, reduce
 from typing import Iterable, List, Sequence, TypeVar, cast
 
 Shape = TypeVar("Shape", bound=ShapeProtocol)
@@ -886,6 +886,16 @@ class StringSyntaxSelector(Selector):
         Filter give object list through th already constructed complex selector object
         """
         return self.mySelector.filter(objectList)
+
+
+@lru_cache(maxsize=256)
+def _cached_string_selector(selector: str) -> StringSyntaxSelector:
+    """Compile strings for internal selection without retaining any geometry.
+
+    Public StringSyntaxSelector instances remain independent and mutable. Only
+    the internal Workplane, Shape and Sketch filtering paths share these trees.
+    """
+    return StringSyntaxSelector(selector)
 
 
 # %% aliases

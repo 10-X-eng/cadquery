@@ -89,6 +89,8 @@ class Vector(object):
                     fV = gp_Vec(*arg)
                 elif len(arg) == 2:
                     fV = gp_Vec(*arg, 0)
+                else:
+                    raise TypeError("Expected a 2- or 3-element tuple or list")
             elif isinstance(args[0], (gp_Vec, gp_Pnt, gp_Dir)):
                 fV = gp_Vec(args[0].XYZ())
             elif isinstance(args[0], gp_XYZ):
@@ -101,6 +103,13 @@ class Vector(object):
             raise TypeError("Expected three floats, OCC gp_, or 3-tuple")
 
         self._wrapped = fV
+
+    @staticmethod
+    def _from_owned(native: gp_Vec) -> "Vector":
+        """Wrap a newly created native vector without copying it again."""
+        result = object.__new__(Vector)
+        result._wrapped = native
+        return result
 
     @property
     def x(self) -> float:
@@ -135,29 +144,29 @@ class Vector(object):
         return self._wrapped
 
     def toTuple(self) -> Tuple[float, float, float]:
-        return (self.x, self.y, self.z)
+        return self.wrapped.Coord() if type(self) is Vector else (self.x, self.y, self.z)
 
     def cross(self, v: "Vector") -> "Vector":
-        return Vector(self.wrapped.Crossed(v.wrapped))
+        return Vector._from_owned(self.wrapped.Crossed(v.wrapped))
 
     def dot(self, v: "Vector") -> float:
         return self.wrapped.Dot(v.wrapped)
 
     def sub(self, v: "Vector") -> "Vector":
-        return Vector(self.wrapped.Subtracted(v.wrapped))
+        return Vector._from_owned(self.wrapped.Subtracted(v.wrapped))
 
     def __sub__(self, v: "Vector") -> "Vector":
         return self.sub(v)
 
     def add(self, v: "Vector") -> "Vector":
-        return Vector(self.wrapped.Added(v.wrapped))
+        return Vector._from_owned(self.wrapped.Added(v.wrapped))
 
     def __add__(self, v: "Vector") -> "Vector":
         return self.add(v)
 
     def multiply(self, scale: float) -> "Vector":
         """Return a copy multiplied by the provided scalar"""
-        return Vector(self.wrapped.Multiplied(scale))
+        return Vector._from_owned(self.wrapped.Multiplied(scale))
 
     def __mul__(self, scale: float) -> "Vector":
         return self.multiply(scale)
@@ -170,7 +179,7 @@ class Vector(object):
 
     def normalized(self) -> "Vector":
         """Return a normalized version of this vector"""
-        return Vector(self.wrapped.Normalized())
+        return Vector._from_owned(self.wrapped.Normalized())
 
     def Center(self) -> "Vector":
         """Return the vector itself
@@ -241,7 +250,7 @@ class Vector(object):
 
     def __iter__(self) -> Iterator[float]:
 
-        yield from (self.x, self.y, self.z)
+        yield from self.toTuple() if type(self) is Vector else (self.x, self.y, self.z)
 
     def toXYZ(self) -> gp_XYZ:
 
@@ -256,12 +265,14 @@ class Vector(object):
         return gp_Dir(self.wrapped.XYZ())
 
     def transform(self, T: "Matrix") -> "Vector":
+        """Apply an affine matrix, treating this vector as a point (w=1)."""
 
-        # to gp_Pnt to obey cq transformation convention (in OCP.vectors do not translate)
-        pnt = self.toPnt()
-        pnt_t = pnt.Transformed(T.wrapped.Trsf())
-
-        return Vector(gp_Vec(pnt_t.XYZ()))
+        # XYZ() returns an independent value through the binding. GTrsf applies
+        # translation too and supports general affine matrices without narrowing
+        # them to the rigid/uniform-scale gp_Trsf representation.
+        coords = self.wrapped.XYZ() if type(self) is Vector else self.toPnt().XYZ()
+        T.wrapped.Transforms(coords)
+        return Vector._from_owned(gp_Vec(coords))
 
     def __getstate__(self) -> tuple[float, float, float]:
 
@@ -488,97 +499,75 @@ class Plane(object):
         """
 
         namedPlanes = {
-            # origin, xDir, normal
-            "XY": Plane(origin, (1, 0, 0), (0, 0, 1)),
-            "YZ": Plane(origin, (0, 1, 0), (1, 0, 0)),
-            "ZX": Plane(origin, (0, 0, 1), (0, 1, 0)),
-            "XZ": Plane(origin, (1, 0, 0), (0, -1, 0)),
-            "YX": Plane(origin, (0, 1, 0), (0, 0, -1)),
-            "ZY": Plane(origin, (0, 0, 1), (-1, 0, 0)),
-            "front": Plane(origin, (1, 0, 0), (0, 0, 1)),
-            "back": Plane(origin, (-1, 0, 0), (0, 0, -1)),
-            "left": Plane(origin, (0, 0, 1), (-1, 0, 0)),
-            "right": Plane(origin, (0, 0, -1), (1, 0, 0)),
-            "top": Plane(origin, (1, 0, 0), (0, 1, 0)),
-            "bottom": Plane(origin, (1, 0, 0), (0, -1, 0)),
+            # xDir, normal
+            "XY": ((1, 0, 0), (0, 0, 1)),
+            "YZ": ((0, 1, 0), (1, 0, 0)),
+            "ZX": ((0, 0, 1), (0, 1, 0)),
+            "XZ": ((1, 0, 0), (0, -1, 0)),
+            "YX": ((0, 1, 0), (0, 0, -1)),
+            "ZY": ((0, 0, 1), (-1, 0, 0)),
+            "front": ((1, 0, 0), (0, 0, 1)),
+            "back": ((-1, 0, 0), (0, 0, -1)),
+            "left": ((0, 0, 1), (-1, 0, 0)),
+            "right": ((0, 0, -1), (1, 0, 0)),
+            "top": ((1, 0, 0), (0, 1, 0)),
+            "bottom": ((1, 0, 0), (0, -1, 0)),
         }
 
         try:
-            return namedPlanes[stdName]
+            xDir, normal = namedPlanes[stdName]
         except KeyError:
             raise ValueError("Supported names are {}".format(list(namedPlanes.keys())))
 
+        return Plane(origin, xDir, normal)
+
     @classmethod
     def XY(cls, origin=(0, 0, 0), xDir=Vector(1, 0, 0)):
-        plane = Plane.named("XY", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, 0, 1))
 
     @classmethod
     def YZ(cls, origin=(0, 0, 0), xDir=Vector(0, 1, 0)):
-        plane = Plane.named("YZ", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (1, 0, 0))
 
     @classmethod
     def ZX(cls, origin=(0, 0, 0), xDir=Vector(0, 0, 1)):
-        plane = Plane.named("ZX", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, 1, 0))
 
     @classmethod
     def XZ(cls, origin=(0, 0, 0), xDir=Vector(1, 0, 0)):
-        plane = Plane.named("XZ", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, -1, 0))
 
     @classmethod
     def YX(cls, origin=(0, 0, 0), xDir=Vector(0, 1, 0)):
-        plane = Plane.named("YX", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, 0, -1))
 
     @classmethod
     def ZY(cls, origin=(0, 0, 0), xDir=Vector(0, 0, 1)):
-        plane = Plane.named("ZY", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (-1, 0, 0))
 
     @classmethod
     def front(cls, origin=(0, 0, 0), xDir=Vector(1, 0, 0)):
-        plane = Plane.named("front", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, 0, 1))
 
     @classmethod
     def back(cls, origin=(0, 0, 0), xDir=Vector(-1, 0, 0)):
-        plane = Plane.named("back", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, 0, -1))
 
     @classmethod
     def left(cls, origin=(0, 0, 0), xDir=Vector(0, 0, 1)):
-        plane = Plane.named("left", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (-1, 0, 0))
 
     @classmethod
     def right(cls, origin=(0, 0, 0), xDir=Vector(0, 0, -1)):
-        plane = Plane.named("right", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (1, 0, 0))
 
     @classmethod
     def top(cls, origin=(0, 0, 0), xDir=Vector(1, 0, 0)):
-        plane = Plane.named("top", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, 1, 0))
 
     @classmethod
     def bottom(cls, origin=(0, 0, 0), xDir=Vector(1, 0, 0)):
-        plane = Plane.named("bottom", origin)
-        plane._setPlaneDir(xDir)
-        return plane
+        return Plane(origin, xDir, (0, -1, 0))
 
     # Prefer multidispatch over multimethod, as that supports keyword
     # arguments. These are in use, since Plane.__init__ has not always
@@ -814,8 +803,11 @@ class Plane(object):
     def _setPlaneDir(self, xDir):
         """Set the vectors parallel to the plane, i.e. xDir and yDir"""
         xDir = Vector(xDir)
-        self.xDir = xDir.normalized()
-        self.yDir = self.zDir.cross(self.xDir).normalized()
+        yDir = self.zDir.cross(xDir.normalized())
+        if yDir.Length == 0:
+            raise ValueError("xDir must not be parallel to normal")
+        self.yDir = yDir.normalized()
+        self.xDir = self.yDir.cross(self.zDir).normalized()
 
     def _calcTransforms(self):
         """Computes transformation matrices to convert between coordinates
@@ -823,32 +815,16 @@ class Plane(object):
         Computes transformation matrices to convert between local and global
         coordinates.
         """
-        # r is the forward transformation matrix from world to local coordinates
-        # ok i will be really honest, i cannot understand exactly why this works
-        # something bout the order of the translation and the rotation.
-        # the double-inverting is strange, and I don't understand it.
-        forward = Matrix()
-        inverse = Matrix()
-
-        forwardT = gp_Trsf()
-        inverseT = gp_Trsf()
-
-        global_coord_system = gp_Ax3()
         local_coord_system = gp_Ax3(
-            gp_Pnt(*self.origin.toTuple()),
-            gp_Dir(*self.zDir.toTuple()),
-            gp_Dir(*self.xDir.toTuple()),
+            self.origin.toPnt(), self.zDir.toDir(), self.xDir.toDir(),
         )
-
-        forwardT.SetTransformation(global_coord_system, local_coord_system)
-        forward.wrapped = gp_GTrsf(forwardT)
-
-        inverseT.SetTransformation(local_coord_system, global_coord_system)
-        inverse.wrapped = gp_GTrsf(inverseT)
-
+        # SetTransformation maps world coordinates into this local frame; its
+        # inverse maps local coordinates back into world coordinates.
+        forward = gp_Trsf()
+        forward.SetTransformation(local_coord_system)
         self.lcs = local_coord_system
-        self.rG = inverse
-        self.fG = forward
+        self.fG = Matrix(forward)
+        self.rG = Matrix(forward.Inverted())
 
     @property
     def location(self) -> "Location":

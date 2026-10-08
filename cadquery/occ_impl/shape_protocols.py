@@ -40,6 +40,7 @@ Geoms = Literal[
     "Wire",
     "Shell",
     "Solid",
+    "CompSolid",
     "Compound",
     "PLANE",
     "CYLINDER",

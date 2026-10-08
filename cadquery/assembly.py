@@ -184,8 +184,7 @@ class Assembly(object):
             ch_copy.parent = rv
 
             rv.children.append(ch_copy)
-            rv.objects[ch_copy.name] = ch_copy
-            rv.objects.update(ch_copy.objects)
+            rv.objects.update(ch_copy._flatten())
 
         return rv
 
@@ -249,11 +248,18 @@ class Assembly(object):
                 raise ValueError(
                     f"Unique name is required. {name} is already in the assembly"
                 )
-
             subassy = arg._copy()
 
+            if name != subassy.name:
+                if name in subassy.objects:
+                    raise ValueError(
+                        f"Unique name is required. {name} is already in the subassembly"
+                    )
+                del subassy.objects[subassy.name]
+                subassy.objects[name] = subassy
+
             subassy.loc = kwargs["loc"] if kwargs.get("loc") else arg.loc
-            subassy.name = kwargs["name"] if kwargs.get("name") else arg.name
+            subassy.name = name
             subassy.color = kwargs["color"] if kwargs.get("color") else arg.color
             subassy.material = _ensure_material(
                 kwargs["material"] if kwargs.get("material") else arg.material
@@ -262,20 +268,37 @@ class Assembly(object):
                 kwargs["metadata"] if kwargs.get("metadata") else arg.metadata
             )
 
-            subassy.parent = self
-
-            self.children.append(subassy)
-            self.objects.update(subassy._flatten())
-
         else:
             # Convert the material string to a Material object, if needed
             if "material" in kwargs:
                 kwargs["material"] = _ensure_material(kwargs["material"])
 
-            assy = self.__class__(arg, **kwargs)
-            assy.parent = self
+            subassy = self.__class__(arg, **kwargs)
+            if type(self) is not Assembly:
+                # Preserve custom add/_copy hooks for Assembly subclasses.
+                subassy.parent = self
+                self.add(subassy)
+                return self
 
-            self.add(assy)
+            # A new leaf is already independent; copying it would construct a
+            # second Assembly and six more empty annotation dictionaries.
+            if subassy.name in self.objects:
+                raise ValueError(
+                    f"Unique name is required. {subassy.name} is already in the assembly"
+                )
+
+        subassy.parent = self
+        self.children.append(subassy)
+        # Propagate relative paths through every owner. Updating only this
+        # node leaves the root's lookup stale when an owned subassembly is
+        # edited in place.
+        added = subassy._flatten()
+        owner = self
+        while owner is not None:
+            owner.objects.update(added)
+            if owner.parent is not None:
+                added = {f"{owner.name}{PATH_DELIM}{k}": v for k, v in added.items()}
+            owner = owner.parent
 
         return self
 
@@ -286,8 +309,8 @@ class Assembly(object):
         :param name: Name of the part/subassembly to be removed
         :return: The modified assembly
 
-        *NOTE* This method can cause problems with deeply nested assemblies and does not remove
-        constraints associated with the removed part/subassembly.
+        Nested objects are addressed by their path relative to this assembly.
+        This method does not remove constraints associated with the removed part/subassembly.
         """
 
         # Make sure the part/subassembly is actually part of the assembly
@@ -297,17 +320,30 @@ class Assembly(object):
         # Get the part/assembly to be removed
         to_remove = self.objects[name]
 
+        if to_remove is self:
+            raise ValueError("Cannot remove the assembly itself")
+
         # Remove the part/assembly from the parent's children list
         if to_remove.parent:
             to_remove.parent.children.remove(to_remove)
 
-        # Remove the part/assembly from the assembly's object dictionary
-        del self.objects[name]
+        # Remove every reference from the direct owner up to the root, using
+        # each owner's relative paths (not unqualified descendant names).
+        removed = list(to_remove._flatten())
+        owner = to_remove.parent
+        while owner is not None:
+            for key in removed:
+                owner.objects.pop(key, None)
+            if owner.parent is not None:
+                removed = [f"{owner.name}{PATH_DELIM}{key}" for key in removed]
+            owner = owner.parent
 
-        # Remove all descendants from the objects dictionary
-        for descendant_name in to_remove._flatten().keys():
-            if descendant_name in self.objects:
-                del self.objects[descendant_name]
+        # Retain support for an explicitly detached object still in this index.
+        if to_remove.parent is None:
+            prefix = name + PATH_DELIM
+            for key in list(self.objects):
+                if key == name or key.startswith(prefix):
+                    del self.objects[key]
 
         # Update the parent reference
         to_remove.parent = None

@@ -21,7 +21,7 @@ from itertools import product, chain
 from multimethod import multimethod
 
 from .hull import find_hull
-from .selectors import StringSyntaxSelector, Selector
+from .selectors import StringSyntaxSelector, Selector, _cached_string_selector
 from .types import Real, UnitLiterals
 from .utils import get_arity, instance_of
 
@@ -672,7 +672,7 @@ class Sketch(object):
         if s and isinstance(s, Selector):
             filtered = s.filter(rv)
         elif s and isinstance(s, str):
-            filtered = StringSyntaxSelector(s).filter(rv)
+            filtered = _cached_string_selector(s).filter(rv)
         else:
             filtered = rv
 

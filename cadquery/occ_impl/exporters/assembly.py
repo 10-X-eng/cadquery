@@ -50,6 +50,7 @@ from OCP.Interface import Interface_Static
 from ..assembly import AssemblyProtocol, toCAF, toVTK, toFusedCAF
 from ..geom import Location
 from ..shapes import Shape, Compound
+from ..step_materials import prepare_materials, finish_materials
 from ...types import UnitLiterals
 
 
@@ -116,6 +117,7 @@ def exportAssembly(
     else:  # Includes "default"
         _, doc = toCAF(assy, True,)
 
+    material_names = prepare_materials(doc)
     session = XSControl_WorkSession()
     writer = STEPCAFControl_Writer(session, False)
     writer.SetColorMode(True)
@@ -130,6 +132,7 @@ def exportAssembly(
         "write.step.unit", outputUnit if outputUnit is not None else unit.upper()
     )
     writer.Transfer(doc, STEPControl_StepModelType.STEPControl_AsIs)
+    finish_materials(session.Model(), material_names)
 
     if name_geometries:
         finder = session.TransferWriter().FinderProcess()
@@ -465,14 +468,15 @@ def exportGLTF(
     orig_loc = assy.loc
     assy.loc *= Location((0, 0, 0), (1, 0, 0), -90)
 
-    _, doc = toCAF(assy, True, True, tolerance, angularTolerance)
+    try:
+        _, doc = toCAF(assy, True, True, tolerance, angularTolerance)
 
-    writer = RWGltf_CafWriter(TCollection_AsciiString(path), binary)
-    result = writer.Perform(
-        doc, TColStd_IndexedDataMapOfStringString(), Message_ProgressRange()
-    )
-
-    # restore coordinate system after exporting
-    assy.loc = orig_loc
+        writer = RWGltf_CafWriter(TCollection_AsciiString(path), binary)
+        result = writer.Perform(
+            doc, TColStd_IndexedDataMapOfStringString(), Message_ProgressRange()
+        )
+    finally:
+        # Failed exports must not leave the caller's assembly rotated.
+        assy.loc = orig_loc
 
     return result

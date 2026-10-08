@@ -149,6 +149,28 @@ or the :meth:`Assembly.exportAssembly`` method.
    # or equivalently when exporting a lower level Shape object
    box.val().export("/path/to/step/box2.step", opt={"write_pcurves": False})
 
+Physical Materials
+------------------
+
+The default assembly STEP exporter preserves each part's material name,
+description and density, including different materials with the same name.
+For example::
+
+   assy.add(body, name="body", material=cq.Material(
+       "steel", density=7850, densityUnit="kg/m^3"))
+
+Material density units are independent of the model's length units. STEP export
+accepts ``mg``, ``g``, ``kg``, ``lb`` or ``oz`` divided by ``mm``, ``cm``, ``m``,
+``in`` or ``ft`` cubed. The cube may be written as ``^3``, ``3`` or ``³``.
+STEP stores and imports these densities in ``g/cm^3``; for example, 7850 kg/m³
+imports as 7.85 g/cm³. XML and XBF retain the original unit label and value.
+
+Unsupported density units, negative values and non-finite values raise
+``ValueError`` before an export overwrites its destination. STEP assembly imports
+also reject explicitly named density measures with incompatible dimensions;
+they do not silently interpret mass³ × length² as density. This can reveal
+malformed material metadata written by older native STEP exporters.
+
 Setting Units
 --------------
 
@@ -339,6 +361,14 @@ Importing Assemblies
 
 It is possible to import CadQuery assemblies from STEP, XBF or XML files using the :meth:`Assembly.load`.
 Note that this method will create a new assembly if invoked from an instance.
+
+Imported sibling names are made unique when the source file contains duplicates.
+Explicit source names are reserved before assigning numeric suffixes, so a source
+component named ``wheel_1`` keeps that name even if earlier components are both
+named ``wheel``. Missing names become ``unnamed`` with a suffix if necessary.
+Renamed nodes retain the source name in ``node.metadata["original_name"]``.
+This behavior is specific to importing; :meth:`Assembly.add` still requires
+unique names when constructing an assembly programmatically.
 
 Exporting Assemblies to glTF
 #############################

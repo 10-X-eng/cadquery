@@ -46,6 +46,7 @@ from .types import UnitLiterals
 from .selectors import (
     Selector,
     StringSyntaxSelector,
+    _cached_string_selector,
 )
 
 from .sketch import Sketch
@@ -709,7 +710,7 @@ class Workplane(object):
                     rv.extend(el for el in obj if isinstance(el, type))
 
             if rv and types == (Solid,):
-                return Compound.makeCompound(rv)
+                return rv[0] if len(rv) == 1 else Compound.makeCompound(rv)
             elif rv:
                 return rv[0]
 
@@ -780,7 +781,7 @@ class Workplane(object):
         selectorObj: Selector
         if selector:
             if isinstance(selector, str):
-                selectorObj = StringSyntaxSelector(selector)
+                selectorObj = _cached_string_selector(selector)
             else:
                 selectorObj = selector
             toReturn = selectorObj.filter(objs)
@@ -1322,7 +1323,14 @@ class Workplane(object):
         """
 
         # copy the current state to the new object
-        ns = self.__class__()
+        # The default constructor builds an XY plane and a fresh context only
+        # to discard both below. Preserve subclass constructor hooks, but avoid
+        # that geometry work for ordinary Workplanes.
+        if type(self) is Workplane:
+            ns = self.__class__.__new__(self.__class__)
+            ns._tag = None
+        else:
+            ns = self.__class__()
         ns.plane = copy(self.plane)
         ns.parent = self
         ns.objects = list(objlist)
@@ -1945,7 +1953,7 @@ class Workplane(object):
         tol: float = 1e-6,
         minDeg: int = 1,
         maxDeg: int = 6,
-        smoothing: Optional[Tuple[float, float, float]] = (1, 1, 1),
+        smoothing: Optional[Tuple[float, float, float]] = None,
         makeWire: bool = True,
     ) -> T:
         """
@@ -1959,7 +1967,9 @@ class Workplane(object):
         :param tol: tolerance of the algorithm (default: 1e-6)
         :param minDeg: minimum spline degree (default: 1)
         :param maxDeg: maximum spline degree (default: 6)
-        :param smoothing: optional parameters for the variational smoothing algorithm (default: (1,1,1))
+        :param smoothing: optional weights for variational smoothing (default: None).
+            Smoothing can move the curve away from the sampled function; by default
+            use tolerance-controlled approximation.
         :param makeWire: convert the resulting spline edge to a wire
         :return: a Workplane object with the current point unchanged
 
@@ -2473,9 +2483,11 @@ class Workplane(object):
         else:
             for o in self.objects:
                 if isinstance(o, (Vector, Shape)):
-                    pnts.append(loc.inverse * Location(plane, o.Center()))
+                    # Both locations have the plane's rotation, so their
+                    # relative transform is a translation in plane coordinates.
+                    pnts.append(Location(plane.toLocalCoords(o.Center())))
                 elif isinstance(o, Sketch):
-                    pnts.append(loc.inverse * Location(plane, o._faces.Center()))
+                    pnts.append(Location(plane.toLocalCoords(o._faces.Center())))
                 else:
                     pnts.append(o)
 
@@ -2571,7 +2583,9 @@ class Workplane(object):
 
         w = Wire.makePolygon(points, forConstruction)
 
-        return self.eachpoint(lambda loc: w.moved(loc), True)
+        # The four perpendicular sides have no same-domain edges to merge.
+        # Avoid cleaning every placement, and keep construction-wire metadata.
+        return self.eachpoint(lambda loc: w.moved(loc), True, clean=False)
 
     # circle from current point
     def circle(self: T, radius: float, forConstruction: bool = False) -> T:
@@ -2606,7 +2620,8 @@ class Workplane(object):
         c = Wire.makeCircle(radius, Vector(), Vector(0, 0, 1))
         c.forConstruction = forConstruction
 
-        return self.eachpoint(lambda loc: c.moved(loc), True)
+        # A newly constructed single-edge circle has nothing to unify.
+        return self.eachpoint(lambda loc: c.moved(loc), True, clean=False)
 
     # ellipse from current point
     def ellipse(
@@ -2644,7 +2659,8 @@ class Workplane(object):
         )
         e.forConstruction = forConstruction
 
-        return self.eachpoint(lambda loc: e.moved(loc), True)
+        # Likewise, an analytic ellipse is already a single closed edge.
+        return self.eachpoint(lambda loc: e.moved(loc), True, clean=False)
 
     def polygon(
         self: T,
@@ -2800,7 +2816,11 @@ class Workplane(object):
         ctxSolid = self.findSolid()
 
         # will contain all of the counterbores as a single compound
-        results = cast(List[Shape], self.eachpoint(fcn, useLocalCoords).vals())
+        # Boolean tools need no separate same-domain cleanup. Clean the final
+        # cut once below, rather than every instance before the cut as well.
+        results = cast(
+            List[Shape], self.eachpoint(fcn, useLocalCoords, clean=False).vals()
+        )
 
         s = ctxSolid.cut(*results)
 
@@ -2913,6 +2933,7 @@ class Workplane(object):
         see :meth:`cboreHole` to make counterbores instead of countersinks
         """
 
+        cskDepth = depth
         if depth is None:
             depth = self.largestDimension()
 
@@ -2925,7 +2946,9 @@ class Workplane(object):
         )  # local coords!
         r = cskDiameter / 2.0
         h = r / math.tan(math.radians(cskAngle / 2.0))
-        csk = Solid.makeCone(r, 0.0, h, center, boreDir)
+        csk: Shape = Solid.makeCone(r, 0.0, h, center, boreDir)
+        if cskDepth is not None and cskDepth < h:
+            csk = csk.intersect(Solid.makeCylinder(r, cskDepth, center, boreDir))
         res = hole.fuse(csk)
 
         return self.cutEach(lambda loc: res.moved(loc), True, clean)
@@ -3077,7 +3100,7 @@ class Workplane(object):
             r = self._extrude(None, both=both, taper=taper, upToFace=until)
 
         elif isinstance(until, (int, float)):
-            r = self._extrude(until, both=both, taper=taper, upToFace=None)
+            r = self._extrude(until, both=both, taper=taper, upToFace=None, clean=clean)
 
         elif isinstance(until, (str, Face)) and combine is False:
             raise ValueError(
@@ -3225,7 +3248,8 @@ class Workplane(object):
         if mode:
             # since we are going to do something convert the iterable if needed
             if not isinstance(obj, Shape):
-                obj = Compound.makeCompound(obj)
+                shapes = list(obj)
+                obj = shapes[0] if len(shapes) == 1 else Compound.makeCompound(shapes)
 
             # dispatch on the mode
             if mode in ("cut", "s"):
@@ -3573,7 +3597,7 @@ class Workplane(object):
 
         elif isinstance(until, (int, float)):
             toCut = self._extrude(
-                until, both=both, taper=taper, upToFace=None, additive=False
+                until, both=both, taper=taper, upToFace=None, additive=False, clean=clean
             )
             solidRef = self.findSolid()
             s = solidRef.cut(toCut)
@@ -3693,6 +3717,7 @@ class Workplane(object):
         taper: Optional[float] = None,
         upToFace: Optional[Union[int, Face]] = None,
         additive: bool = True,
+        clean: bool = False,
     ) -> Union[Solid, Compound]:
         """
         Make a prismatic solid from the existing set of pending wires.
@@ -3701,6 +3726,7 @@ class Workplane(object):
         :param both: extrude in both directions symmetrically
         :param upToFace: if specified, extrude up to a face: 0 for the next, -1 for the last face
         :param additive: specify if extruding or cutting, required param for uptoface algorithm
+        :param clean: allow simplified topology when the caller will clean the result
 
         :return: OCCT solid(s), suitable for boolean operations.
 
@@ -3785,10 +3811,38 @@ class Workplane(object):
         else:
             toFuse = []
             for face in faces:
-                s1 = Solid.extrudeLinear(face, eDir, taper=taper)
+                if (
+                    clean
+                    and both
+                    and not taper
+                    and all(edge.geomType() == "LINE" for edge in face.Edges())
+                    and face.geomType() == "PLANE"
+                    and face.isValid()
+                ):
+                    # The union of the two opposite prisms is exactly the
+                    # prism swept from -eDir to +eDir. Skip the Boolean when
+                    # the caller will remove its intermediate split faces.
+                    # Curved profiles keep the original path: its cleaned
+                    # result can retain seam splits used by later selectors.
+                    toFuse.append(Solid.extrudeLinear(face.moved(-eDir), eDir * 2))
+                    continue
+                s1 = (
+                    Solid._extrudeCircular(face, eDir, taper)
+                    if clean and taper
+                    else None
+                )
+                if s1 is None:
+                    s1 = Solid.extrudeLinear(face, eDir, taper=taper)
 
                 if both:
-                    s2 = Solid.extrudeLinear(face, eDir.multiply(-1.0), taper=taper)
+                    reverseDir = eDir.multiply(-1.0)
+                    s2 = (
+                        Solid._extrudeCircular(face, reverseDir, taper)
+                        if clean and taper
+                        else None
+                    )
+                    if s2 is None:
+                        s2 = Solid.extrudeLinear(face, reverseDir, taper=taper)
                     toFuse.append(s1.fuse(s2, glue=True))
                 else:
                     toFuse.append(s1)

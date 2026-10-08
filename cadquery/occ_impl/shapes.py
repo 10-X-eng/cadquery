@@ -31,6 +31,7 @@ from .shape_protocols import geom_LUT_FACE, geom_LUT_EDGE, Shapes, Geoms
 from ..selectors import (
     Selector,
     StringSyntaxSelector,
+    _cached_string_selector,
 )
 
 from ..utils import multimethod, multidispatch, mypyclassmethod
@@ -206,6 +207,7 @@ from OCP.ShapeFix import ShapeFix_Shape, ShapeFix_Solid, ShapeFix_Face
 from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
 
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.IMeshTools import IMeshTools_Parameters, IMeshTools_MeshAlgoType_Delabella
 from OCP.StlAPI import StlAPI_Writer
 
 from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
@@ -335,7 +337,7 @@ from OCP.GeomAdaptor import GeomAdaptor_Surface
 
 from OCP.OSD import OSD_ThreadPool
 
-from math import pi, sqrt, inf, radians, cos
+from math import pi, sqrt, inf, radians, cos, tan
 
 import warnings
 
@@ -364,6 +366,7 @@ shape_properties_LUT = {
     ta.TopAbs_FACE: BRepGProp.SurfaceProperties_s,
     ta.TopAbs_SHELL: BRepGProp.SurfaceProperties_s,
     ta.TopAbs_SOLID: BRepGProp.VolumeProperties_s,
+    ta.TopAbs_COMPSOLID: BRepGProp.VolumeProperties_s,
     ta.TopAbs_COMPOUND: BRepGProp.VolumeProperties_s,
 }
 
@@ -387,7 +390,7 @@ geom_LUT = {
     ta.TopAbs_FACE: BRepAdaptor_Surface,
     ta.TopAbs_SHELL: "Shell",
     ta.TopAbs_SOLID: "Solid",
-    ta.TopAbs_SOLID: "CompSolid",
+    ta.TopAbs_COMPSOLID: "CompSolid",
     ta.TopAbs_COMPOUND: "Compound",
 }
 
@@ -400,6 +403,74 @@ ancestors_LUT = {
 }
 
 T = TypeVar("T", bound="Shape")
+
+
+_MESH_ANALYTIC_SURFACES = frozenset(
+    (ga.GeomAbs_Plane, ga.GeomAbs_Cylinder, ga.GeomAbs_Cone,
+     ga.GeomAbs_Sphere, ga.GeomAbs_Torus)
+)
+
+
+def _mesh(
+    shape: TopoDS_Shape,
+    tolerance: float,
+    relative: bool,
+    angularTolerance: float,
+    parallel: bool = False,
+) -> None:
+    parameters = IMeshTools_Parameters()
+    parameters.Deflection = tolerance
+    parameters.Relative = relative
+    parameters.Angle = angularTolerance
+    parameters.InParallel = parallel
+
+    face_map = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(shape, ta.TopAbs_FACE, face_map)
+    faces = [TopoDS.Face(face_map.FindKey(i)) for i in range(1, face_map.Extent() + 1)]
+    faces = [face for face in faces if BRep_Tool.IsGeometric_s(face)]
+    if not faces:
+        return
+    for face in faces:
+        triangulation = BRep_Tool.Triangulation_s(face, TopLoc_Location())
+        if triangulation is not None:
+            previous = triangulation.Parameters()
+            if (
+                previous is None
+                or not previous.HasAngle()
+                or previous.Angle() > angularTolerance
+            ):
+                # OCCT may reuse a mesh based on linear deflection alone.
+                # Clear stale angular precision before asking it to refine.
+                # Clean preserves mesh-only faces without surface geometry.
+                BRepTools.Clean_s(shape)
+                break
+    # Delabella normalizes its input coordinates by the domain's two extents.
+    # A face collapsed at kernel tolerance can leave a zero extent and crash
+    # natively. Retain OCCT's default mesher for these domains, including when
+    # they occur inside an otherwise ordinary compound.
+    tolerance3d = max(
+        Precision.Confusion_s(),
+        *(BRep_Tool.MaxTolerance_s(shape, kind) for kind in
+          (ta.TopAbs_FACE, ta.TopAbs_EDGE, ta.TopAbs_VERTEX)),
+    )
+    for face in faces:
+        surface = BRepAdaptor_Surface(face, True)
+        # Delabella's adaptive freeform mesher can be slower and produce many
+        # more triangles on spline surfaces at the same tolerances. Retain
+        # OCCT's default for freeform geometry; share one factory across the
+        # shape so neighboring faces are meshed together consistently.
+        if surface.GetType() not in _MESH_ANALYTIC_SURFACES:
+            break
+        if (
+            surface.LastUParameter() - surface.FirstUParameter()
+            <= surface.UResolution(tolerance3d)
+            or surface.LastVParameter() - surface.FirstVParameter()
+            <= surface.VResolution(tolerance3d)
+        ):
+            break
+    else:
+        parameters.MeshAlgo = IMeshTools_MeshAlgoType_Delabella
+    BRepMesh_IncrementalMesh(shape, parameters)
 
 
 def shapetype(obj: TopoDS_Shape) -> TopAbs_ShapeEnum:
@@ -419,6 +490,22 @@ def downcast(obj: TopoDS_Shape) -> TopoDS_Shape:
     rv = f_downcast(obj)
 
     return rv
+
+
+def _shape_list_values(shapes: TopTools_ListOfShape) -> Iterable[TopoDS_Shape]:
+    """Read small native lists without the binding's costly iterator setup."""
+    if shapes.Size() > 32:
+        return shapes
+
+    result = []
+    remaining = TopTools_ListOfShape(shapes)
+    while not remaining.IsEmpty():
+        item = remaining.First()
+        # Copy the header before removing its list node; keep the same geometry,
+        # placement and orientation. Never consume or mutate the caller's list.
+        result.append(item.Oriented(item.Orientation()))
+        remaining.RemoveFirst()
+    return result
 
 
 def fix(obj: TopoDS_Shape) -> TopoDS_Shape:
@@ -452,6 +539,18 @@ class Shape(object):
 
         upgrader = ShapeUpgrade_UnifySameDomain(self.wrapped, True, True, True)
         upgrader.AllowInternalEdges(False)
+        # OCCT can discard spherical trimming wires when merging same-domain
+        # faces (upstream #2020), corrupting both the result and shared input
+        # topology. Protect these boundaries before running the operation.
+        # Other surfaces and edges can still unify. Unchanged face identities
+        # are retained for subsequent operations such as extrude-until-face.
+        if self.wrapped.ShapeType() not in (
+            ta.TopAbs_WIRE, ta.TopAbs_EDGE, ta.TopAbs_VERTEX
+        ):
+            for face in self.Faces():
+                if BRepAdaptor_Surface(face.wrapped, False).GetType() == ga.GeomAbs_Sphere:
+                    for edge in face.Edges():
+                        upgrader.KeepShape(edge.wrapped)
         upgrader.Build()
 
         return self.__class__(upgrader.Shape())
@@ -469,23 +568,10 @@ class Shape(object):
     def cast(cls, obj: TopoDS_Shape, forConstruction: bool = False) -> Shape:
         "Returns the right type of wrapper, given a OCCT object"
 
-        tr = None
-
-        # define the shape lookup table for casting
-        constructor_LUT = {
-            ta.TopAbs_VERTEX: Vertex,
-            ta.TopAbs_EDGE: Edge,
-            ta.TopAbs_WIRE: Wire,
-            ta.TopAbs_FACE: Face,
-            ta.TopAbs_SHELL: Shell,
-            ta.TopAbs_SOLID: Solid,
-            ta.TopAbs_COMPSOLID: CompSolid,
-            ta.TopAbs_COMPOUND: Compound,
-        }
-
         t = shapetype(obj)
-        # NB downcast is needed to handle TopoDS_Shape types
-        tr = constructor_LUT[t](downcast(obj))
+        # Every wrapper constructor downcasts through Shape.__init__. Doing it
+        # here as well repeats the native type checks and conversion.
+        tr = _constructor_LUT[t](obj)
         tr.forConstruction = forConstruction
 
         return tr
@@ -514,9 +600,7 @@ class Shape(object):
         :param parallel: If True, OCCT will use parallel processing to mesh the shape. Default is True.
         """
         # The constructor used here automatically calls mesh.Perform(). https://dev.opencascade.org/doc/refman/html/class_b_rep_mesh___incremental_mesh.html#a3a383b3afe164161a3aa59a492180ac6
-        BRepMesh_IncrementalMesh(
-            self.wrapped, tolerance, relative, angularTolerance, parallel
-        )
+        _mesh(self.wrapped, tolerance, relative, angularTolerance, parallel)
 
         writer = StlAPI_Writer()
         writer.ASCIIMode = ascii
@@ -666,7 +750,9 @@ class Shape(object):
         elif tr is BRepAdaptor_Curve:
             rv = geom_LUT_EDGE[tr(tcast(TopoDS_Edge, self.wrapped)).GetType()]
         else:
-            rv = geom_LUT_FACE[tr(self.wrapped).GetType()]
+            # Surface classification does not depend on the face's trimmed UV
+            # bounds. Computing those bounds can dominate repeated type queries.
+            rv = geom_LUT_FACE[tr(self.wrapped, False).GetType()]
 
         return tcast(Geoms, rv)
 
@@ -801,16 +887,21 @@ class Shape(object):
 
         :param objects: A list of objects with mass
         """
-        total_mass = sum(Shape.computeMass(o) for o in objects)
-        weighted_centers = [
-            Shape.centerOfMass(o).multiply(Shape.computeMass(o)) for o in objects
-        ]
+        total_mass = 0.0
+        sum_wc = Vector()
+        for obj in objects:
+            # A single integration computes both mass and center. Do not cache
+            # properties on shapes: their underlying topology can be mutated.
+            properties = GProp_GProps()
+            Shape._mass_calc_function(obj)(obj.wrapped, properties)
+            mass = properties.Mass()
+            total_mass += mass
+            sum_wc += Vector(properties.CentreOfMass()).multiply(mass)
 
-        sum_wc = weighted_centers[0]
-        for wc in weighted_centers[1:]:
-            sum_wc = sum_wc.add(wc)
+        if total_mass == 0:
+            raise ValueError("Cannot compute the center of objects with zero total mass")
 
-        return Vector(sum_wc.multiply(1.0 / total_mass))
+        return sum_wc.multiply(1.0 / total_mass)
 
     @staticmethod
     def _mass_calc_function(obj: Shape) -> Any:
@@ -823,20 +914,20 @@ class Shape(object):
         # special handling of compounds - first non-compound child is assumed to define the type of the operation
         if type_ == ta.TopAbs_COMPOUND:
 
-            # if the compound is not empty check its children
-            if obj:
-                # first child
-                child = next(iter(obj))
-
-                # if compound, go deeper
-                while child.ShapeType() == "Compound":
-                    child = next(iter(child))
-
-                type_ = shapetype(child.wrapped)
-
-            # if the compound is empty assume it was meant to be a solid
-            else:
-                type_ = ta.TopAbs_SOLID
+            # Find the first non-compound descendant, skipping empty branches.
+            # An explicit stack also handles deeply nested assemblies without
+            # depending on Python's recursion limit.
+            type_ = ta.TopAbs_SOLID
+            stack = [iter(obj)]
+            while stack:
+                child = next(stack[-1], None)
+                if child is None:
+                    stack.pop()
+                elif shapetype(child.wrapped) == ta.TopAbs_COMPOUND:
+                    stack.append(iter(child))
+                else:
+                    type_ = shapetype(child.wrapped)
+                    break
 
         # get the function based on dimensionality of the object
         return shape_properties_LUT[type_]
@@ -908,7 +999,9 @@ class Shape(object):
         shape_set = TopTools_IndexedMapOfShape()
         TopExp.MapShapes_s(self.wrapped, inverse_shape_LUT[topo_type], shape_set)
 
-        return tcast(Iterable[TopoDS_Shape], shape_set)
+        # Indexed access preserves OCCT's order and uniqueness without the
+        # binding's expensive iterator setup, even for an empty map.
+        return (shape_set.FindKey(i) for i in range(1, shape_set.Extent() + 1))
 
     def _entitiesFrom(
         self, child_type: Shapes, parent_type: Shapes
@@ -926,7 +1019,7 @@ class Shape(object):
         out: dict[Shape, list[Shape]] = {}
         for i in range(1, res.Extent() + 1):
             out[Shape.cast(res.FindKey(i))] = [
-                Shape.cast(el) for el in res.FindFromIndex(i)
+                Shape.cast(el) for el in _shape_list_values(res.FindFromIndex(i))
             ]
 
         return out
@@ -996,7 +1089,7 @@ class Shape(object):
         selectorObj: Selector
         if selector:
             if isinstance(selector, str):
-                selectorObj = StringSyntaxSelector(selector)
+                selectorObj = _cached_string_selector(selector)
             else:
                 selectorObj = selector
             selected = selectorObj.filter(list(objs))
@@ -1017,7 +1110,7 @@ class Shape(object):
         selectorObj: Selector
         if selector:
             if isinstance(selector, str):
-                selectorObj = StringSyntaxSelector(selector)
+                selectorObj = _cached_string_selector(selector)
             else:
                 selectorObj = selector
             selected = selectorObj.filter(list(objs))
@@ -1605,11 +1698,10 @@ class Shape(object):
 
     def mesh(self, tolerance: float, angularTolerance: float = 0.1) -> None:
         """
-        Generate triangulation if none exists.
+        Generate or refine triangulation to the requested tolerances.
         """
 
-        if not BRepTools.Triangulation_s(self.wrapped, tolerance):
-            BRepMesh_IncrementalMesh(self.wrapped, tolerance, True, angularTolerance)
+        _mesh(self.wrapped, tolerance, True, angularTolerance)
 
     def tessellate(
         self, tolerance: float, angularTolerance: float = 0.1
@@ -1635,29 +1727,27 @@ class Shape(object):
             )
 
             # add vertices
-            vertices += [
-                Vector(v.X(), v.Y(), v.Z())
-                for v in (
-                    poly.Node(i).Transformed(Trsf) for i in range(1, poly.NbNodes() + 1)
-                )
-            ]
+            nodes = (poly.Node(i) for i in range(1, poly.NbNodes() + 1))
+            if not loc.IsIdentity():
+                nodes = (v.Transformed(Trsf) for v in nodes)
+            vertices.extend(Vector(*v.Coord()) for v in nodes)
 
             # add triangles
             triangles += [
                 (
                     (
-                        t.Value(1) + offset - 1,
-                        t.Value(3) + offset - 1,
-                        t.Value(2) + offset - 1,
+                        a + offset - 1,
+                        c + offset - 1,
+                        b + offset - 1,
                     )
                     if reverse
                     else (
-                        t.Value(1) + offset - 1,
-                        t.Value(2) + offset - 1,
-                        t.Value(3) + offset - 1,
+                        a + offset - 1,
+                        b + offset - 1,
+                        c + offset - 1,
                     )
                 )
-                for t in poly.Triangles()
+                for a, b, c in (t.Get() for t in poly.Triangles())
             ]
 
             offset += poly.NbNodes()
@@ -1781,7 +1871,7 @@ class Shape(object):
         )
 
         return Compound.makeCompound(
-            Shape.cast(s) for s in shape_map.FindFromKey(self.wrapped)
+            Shape.cast(s) for s in _shape_list_values(shape_map.FindFromKey(self.wrapped))
         )
 
     def siblings(
@@ -1809,7 +1899,7 @@ class Shape(object):
                 rv.update(
                     Shape.cast(el)
                     for child in s._entities(kind)
-                    for el in shape_map.FindFromKey(child)
+                    for el in _shape_list_values(shape_map.FindFromKey(child))
                     if not exclude.Contains(el)
                 )
 
@@ -3461,6 +3551,18 @@ class Face(Shape):
         # get the geometry
         surface = self._geomAdaptor()
 
+        if locationVector is None and isinstance(surface, Geom_Plane):
+            # A plane's normal is constant, including across trimmed holes.
+            # Surface_s already applies the face location. An indirect plane
+            # frame and a reversed face each reverse its geometric normal.
+            axes = surface.Position()
+            direction = axes.Direction()
+            if (not axes.Direct()) != (
+                self.wrapped.Orientation() == ta.TopAbs_REVERSED
+            ):
+                direction = direction.Reversed()
+            return Vector(direction)
+
         if locationVector is None:
             u0, u1, v0, v1 = self._uvBounds()
             u = 0.5 * (u0 + u1)
@@ -3820,7 +3922,7 @@ class Face(Shape):
         however the resulting plane will still contain the center of this face.
         """
 
-        adaptor = BRepAdaptor_Surface(self.wrapped)
+        adaptor = BRepAdaptor_Surface(self.wrapped, False)
         return adaptor.Plane()
 
     def thicken(self, thickness: float) -> Solid:
@@ -4097,6 +4199,16 @@ class Mixin3D(object):
         :param tolerance: Modelling tolerance of the method, default=0.0001.
         :return: A shelled solid.
         """
+
+        # Offset construction can fail at spherical poles when a rotation is
+        # carried by the top-level Location (OCCT issue, upstream #2074). Work
+        # in the shape's local frame and restore its placement afterwards.
+        if not self.wrapped.Location().IsIdentity():
+            loc = self.location()
+            local_faces = [f.moved(loc.inverse) for f in faceList] if faceList else []
+            return self.located(Location()).hollow(
+                local_faces, thickness, tolerance, kind
+            ).moved(loc)
 
         kind_dict = {
             "arc": GeomAbs_JoinType.GeomAbs_Arc,
@@ -4568,6 +4680,54 @@ class Solid(Shape, Mixin3D):
 
         return cls(prism_builder.Shape())
 
+    @classmethod
+    def _extrudeCircular(
+        cls, face: Face, vecNormal: Vector, taper: Real
+    ) -> Solid | None:
+        """Exact frustum shortcut for callers that will clean the result.
+
+        The general evolved builder splits the conical surface; retain that
+        topology when a caller requests an uncleaned extrusion.
+        """
+        if not (-90 < taper < 90) or face.wrapped.Orientation() != ta.TopAbs_FORWARD:
+            return None
+        edges = face.Edges()
+        if len(edges) != 1 or edges[0].geomType() != "CIRCLE":
+            return None
+        curve = edges[0]._geomAdaptor()
+        surface = BRepAdaptor_Surface(face.wrapped, False)
+        if not (
+            surface.GetType() == ga.GeomAbs_Plane
+            and surface.Plane().Position().Direct()
+            and len(face.Wires()) == 1
+            and edges[0].wrapped.Orientation() == ta.TopAbs_FORWARD
+            and edges[0].IsClosed()
+            and curve.LastParameter() - curve.FirstParameter() == 2 * pi
+            and curve.Circle()
+            .Axis()
+            .Direction()
+            .IsEqual(surface.Plane().Axis().Direction(), Precision.Angular_s())
+        ):
+            return None
+        circle = curve.Circle()
+        height = vecNormal.Length
+        radius = circle.Radius()
+        end_radius = radius - height * tan(radians(taper))
+        if (
+            height <= Precision.Confusion_s()
+            or end_radius <= Precision.Confusion_s()
+            or abs(radius - end_radius) <= Precision.Confusion_s()
+        ):
+            return None
+        normal = face.normalAt()
+        direction = normal if vecNormal.getAngle(normal) < radians(90) else -normal
+        axis = gp_Ax2(
+            circle.Location(),
+            direction.toDir(),
+            gp_Dir(gp_Vec(circle.Location(), curve.Value(curve.FirstParameter()))),
+        )
+        return cls(BRepPrimAPI_MakeCone(axis, radius, end_radius, height).Shape())
+
     @mypyclassmethod
     @multimethod
     def revolve(
@@ -5013,7 +5173,9 @@ class Compound(Shape, Mixin3D):
             )
 
         return Compound.makeCompound(
-            Shape.cast(a) for s in self for a in shape_map.FindFromKey(s.wrapped)
+            Shape.cast(a)
+            for s in self
+            for a in _shape_list_values(shape_map.FindFromKey(s.wrapped))
         )
 
     def siblings(
@@ -5045,7 +5207,7 @@ class Compound(Shape, Mixin3D):
                 rv.update(
                     Shape.cast(el)
                     for child in s._entities(kind)
-                    for el in shape_map.FindFromKey(child)
+                    for el in _shape_list_values(shape_map.FindFromKey(child))
                     if not exclude.Contains(el)
                 )
 
@@ -5133,6 +5295,9 @@ _cq_shape_LUT = {
     CompSolid: "CompSolid",
     Compound: "Compound",
 }
+
+# Build this once after the wrapper classes exist, rather than for every cast.
+_constructor_LUT = {inverse_shape_LUT[name]: cls for cls, name in _cq_shape_LUT.items()}
 
 
 T1 = TypeVar("T1")
@@ -5612,7 +5777,7 @@ def _toptools_list_to_shapes(tl: TopTools_ListOfShape) -> list[Shape]:
     Convert a TopTools list (OCCT specific) to a compound.
     """
 
-    return [_normalize(Shape.cast(el)) for el in tl]
+    return [_normalize(Shape.cast(el)) for el in _shape_list_values(tl)]
 
 
 _geomabsshape_dict = dict(
@@ -5836,7 +6001,7 @@ def _apply_reshape(op: Op, ctx: ShapeBuild_ReShape) -> Op:
                 modified = hist.Modified(subshape.wrapped)
 
                 if not modified.IsEmpty():
-                    processed.extend([Shape.cast(el) for el in modified])
+                    processed.extend([Shape.cast(el) for el in _shape_list_values(modified)])
                 else:
                     processed.append(subshape)
 
@@ -5992,7 +6157,7 @@ def _update_history(
                         op._deleted.append(el)
 
                 if has_generated:
-                    gen = _compound_or_shape(list(builder.Generated(wrapped)))
+                    gen = _compound_or_shape(list(_shape_list_values(builder.Generated(wrapped))))
                     if gen:
                         if el in op._generated:
                             op._generated[el] |= gen
@@ -6001,7 +6166,7 @@ def _update_history(
 
                 if has_modifidied:
                     try:
-                        mod = _compound(list(builder.Modified(wrapped)))
+                        mod = _compound(list(_shape_list_values(builder.Modified(wrapped))))
                         if mod:
                             if el in op._modified:
                                 op._modified[el] |= mod
@@ -7564,7 +7729,7 @@ def sweep(
             top = Shape(builder.LastShape())
             side = compound()
             for el in f.outerWire():
-                side |= _compound_or_shape(list(builder.Generated(el.wrapped)))
+                side |= _compound_or_shape(list(_shape_list_values(builder.Generated(el.wrapped))))
 
             for w in f.innerWires():
                 builder_inner = _make_builder()
@@ -7580,7 +7745,7 @@ def sweep(
                 side_inner = compound()
                 for el in w:
                     side_inner |= _compound_or_shape(
-                        list(builder_inner.Generated(el.wrapped))
+                        list(_shape_list_values(builder_inner.Generated(el.wrapped)))
                     )
 
                 sides.append(side_inner)

@@ -36,6 +36,9 @@ from OCP.Quantity import (
     Quantity_TOC_RGB,
 )
 from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy
+from OCP.ShapeUpgrade import ShapeUpgrade_RemoveLocations
+from OCP.TopAbs import TopAbs_COMPOUND
 from OCP.collections import List_TopoDS_Shape as TopTools_ListOfShape
 from OCP.BOPAlgo import BOPAlgo_GlueEnum, BOPAlgo_Builder
 from OCP.TopoDS import TopoDS_Shape
@@ -49,7 +52,10 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 from .geom import Location
-from .shapes import Shape, Solid, Compound, GlueLiteral, _set_glue, _set_builder_options
+from .shapes import (
+    Shape, Solid, Compound, GlueLiteral,
+    _set_glue, _set_builder_options, _shape_list_values,
+)
 from .exporters.vtk import toString, extractEdgesFaces
 from ..cq import Workplane
 from ..utils import BiDict
@@ -73,6 +79,11 @@ class Material(object):
         Can be passed an arbitrary string name for the material along with keyword
         arguments defining some other characteristics of the material. If nothing is
         passed, arbitrary defaults are used.
+
+        ``densityUnit`` defaults to ``g/cm^3``. STEP export supports mass units
+        mg, g, kg, lb and oz divided by mm, cm, m, in or ft cubed (for example,
+        ``kg/m^3`` or ``lb/in^3``). STEP imports normalize density to ``g/cm^3``;
+        XML/XBF preserve the specified unit label.
         """
 
         # Create the default material object and prepare to set a few defaults
@@ -470,8 +481,17 @@ def toCAF(
     ltool = XCAFDoc_DocumentTool.LayerTool_s(doc.Main())
     mtool = XCAFDoc_DocumentTool.MaterialTool_s(doc.Main())
 
-    # used to store labels with unique part-color combinations
-    unique_objs: Dict[Tuple[Color | None, AssemblyObjects], TDF_Label] = {}
+    # Physical material is attached to the part definition, just like its
+    # STEP color. Instances with different materials need distinct labels.
+    unique_objs: Dict[
+        Tuple[
+            Color | None,
+            AssemblyObjects,
+            Tuple[str, str, float, str] | None,
+            Optional[int],
+        ],
+        TDF_Label,
+    ] = {}
     # used to cache unique, possibly meshed, compounds; allows to avoid redundant meshing operations if same object is referenced multiple times in an assy
     compounds: Dict[AssemblyObjects, Compound] = {}
 
@@ -490,22 +510,62 @@ def toCAF(
 
         # add a leaf with the actual part if needed
         if el.obj:
+            subshape_colors = el._subshape_colors
+            subshape_names = el._subshape_names
+            subshape_layers = el._subshape_layers
+            subshape_keys = (
+                subshape_colors.keys() | subshape_names.keys() | subshape_layers.keys()
+            )
+            copier = None
+            location_remover = None
             # get/register unique parts referenced in the assy
-            key0 = (current_color, el.obj)  # (color, shape)
+            # Per-face annotations belong to this instance, even when its
+            # overall color and source geometry match another instance.
+            key0 = (
+                current_color,
+                el.obj,
+                current_material.toTuple() if current_material else None,
+                id(el) if subshape_keys else None,
+            )
             key1 = el.obj  # shape
+            was_cached = key1 in compounds
 
             if key0 in unique_objs:
                 lab = unique_objs[key0]
             else:
                 lab = tool.NewShape()
-                if key1 in compounds:
-                    compound = compounds[key1].copy(mesh)
-                else:
+                if key1 in compounds and not subshape_keys:
+                    # glTF supports separate materials referring to shared mesh
+                    # buffers. A new compound provides a distinct part label
+                    # while retaining shared triangulations. STEP requires
+                    # independent topology for its color associations.
+                    compound = (
+                        Compound.makeCompound(compounds[key1])
+                        if mesh
+                        else compounds[key1].copy()
+                    )
+                elif key1 not in compounds:
                     compound = Compound.makeCompound(el.shapes)
                     if mesh:
                         compound.mesh(tolerance, angularTolerance)
 
                     compounds[key1] = compound
+
+                if subshape_keys and (mesh or was_cached):
+                    # Independent topology is required for independent face
+                    # styles. Map annotations through the copy history rather
+                    # than attaching the original faces to a copied part.
+                    copier = BRepBuilderAPI_Copy(compounds[key1].wrapped, True, mesh)
+                    compound = Compound(copier.Shape())
+                    if mesh:
+                        # RWMesh's style map replaces the face location with
+                        # the instance location. Bake internal placements so
+                        # located faces still match their annotation keys.
+                        location_remover = ShapeUpgrade_RemoveLocations()
+                        location_remover.SetRemoveLevel(TopAbs_COMPOUND)
+                        location_remover.Remove(compound.wrapped)
+                        compound = Compound(location_remover.GetResult())
+                        compound.mesh(tolerance, angularTolerance)
 
                 tool.SetShape(lab, compound.wrapped)
                 setName(lab, f"{el.name}_part" if el.children else el.name, tool)
@@ -520,15 +580,12 @@ def toCAF(
                     setMaterial(lab, current_material, mtool)
 
             # handle subshape names/colors/layers
-            subshape_colors = el._subshape_colors
-            subshape_names = el._subshape_names
-            subshape_layers = el._subshape_layers
+            for k in subshape_keys:
 
-            for k in (
-                subshape_colors.keys() | subshape_names.keys() | subshape_layers.keys()
-            ):
-
-                subshape_label = tool.AddSubShape(lab, k.wrapped)
+                subshape = copier.ModifiedShape(k.wrapped) if copier else k.wrapped
+                if location_remover:
+                    subshape = location_remover.ModifiedShape(subshape)
+                subshape_label = tool.AddSubShape(lab, subshape)
 
                 # Sanity check, this is in principle enforced when calling addSubshape
                 assert not subshape_label.IsNull(), "Invalid subshape"
@@ -544,6 +601,10 @@ def toCAF(
                     ctool.SetColor(
                         subshape_label, subshape_colors[k].wrapped, XCAFDoc_ColorGen,
                     )
+                    if mesh:
+                        # The glTF style reader resolves surface colors; a
+                        # generic face color must override the part surface.
+                        setColor(subshape_label, subshape_colors[k], ctool)
 
                 # Also add a layer to hold the subshape label data
                 if k in subshape_layers:
@@ -837,7 +898,7 @@ def toFusedCAF(
             # Handle any modified faces
             modded_list = fuse_op.Modified(face.wrapped)
 
-            for mod in modded_list:
+            for mod in _shape_list_values(modded_list):
                 # Add the face as a subshape and set its color to match the parent assembly component
                 cur_lbl = shape_tool.AddSubShape(top_level_lbl, mod)
                 if color and not cur_lbl.IsNull() and not fuse_op.IsDeleted(mod):
@@ -846,7 +907,7 @@ def toFusedCAF(
             # Handle any generated faces
             gen_list = fuse_op.Generated(face.wrapped)
 
-            for gen in gen_list:
+            for gen in _shape_list_values(gen_list):
                 # Add the face as a subshape and set its color to match the parent assembly component
                 cur_lbl = shape_tool.AddSubShape(top_level_lbl, gen)
                 if color and not cur_lbl.IsNull():
