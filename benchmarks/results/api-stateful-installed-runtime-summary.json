@@ -1,0 +1,423 @@
+{
+  "source": "benchmarks/results/api-stateful-installed-runtime-performance.json",
+  "repeat": 3,
+  "reference_speedup": 1.7,
+  "fork_jobs": true,
+  "all_geometry_checks_match": true,
+  "timing_scope": "feature_runtime.run_request; validation and fixture cleanup excluded",
+  "installed_steve": true,
+  "overall": {
+    "cases": 48,
+    "geometric_mean_speedup": 1.7817034091632804,
+    "sum_of_medians_s": {
+      "before": 280.1622610655613,
+      "after": 124.23979565151967
+    },
+    "ratio_of_summed_medians": 2.2550122494678657
+  },
+  "preview": {
+    "cases": 24,
+    "geometric_mean_speedup": 1.5404755059258914,
+    "sum_of_medians_s": {
+      "before": 62.68394688074477,
+      "after": 37.82350463955663
+    },
+    "ratio_of_summed_medians": 1.6572749531831736
+  },
+  "full": {
+    "cases": 24,
+    "geometric_mean_speedup": 2.0607059482689185,
+    "sum_of_medians_s": {
+      "before": 217.47831418481655,
+      "after": 86.41629101196304
+    },
+    "ratio_of_summed_medians": 2.5166355977336488
+  },
+  "slower_medians": [],
+  "models": {
+    "plate": {
+      "preview": {
+        "median_s": {
+          "before": 0.14993007900193334,
+          "after": 0.12119454890489578
+        },
+        "speedup": 1.2371024964133246
+      },
+      "full": {
+        "median_s": {
+          "before": 0.5679144139867276,
+          "after": 0.323850842891261
+        },
+        "speedup": 1.7536295688364645
+      }
+    },
+    "bearing_pedestal": {
+      "preview": {
+        "median_s": {
+          "before": 0.684949385933578,
+          "after": 0.4793880949728191
+        },
+        "speedup": 1.4287993237971712
+      },
+      "full": {
+        "median_s": {
+          "before": 2.5594711580779403,
+          "after": 1.2590127349831164
+        },
+        "speedup": 2.0329191968914144
+      }
+    },
+    "design": {
+      "preview": {
+        "median_s": {
+          "before": 0.1879339178558439,
+          "after": 0.1569032850675285
+        },
+        "speedup": 1.1977691721047163
+      },
+      "full": {
+        "median_s": {
+          "before": 0.4296029871329665,
+          "after": 0.2973530038725585
+        },
+        "speedup": 1.4447575156062276
+      }
+    },
+    "modeling_housing": {
+      "preview": {
+        "median_s": {
+          "before": 0.5826159860007465,
+          "after": 0.325558225158602
+        },
+        "speedup": 1.7895907428445827
+      },
+      "full": {
+        "median_s": {
+          "before": 1.7413497248198837,
+          "after": 0.658423321088776
+        },
+        "speedup": 2.644726681218352
+      }
+    },
+    "modeling_flange": {
+      "preview": {
+        "median_s": {
+          "before": 0.41422489285469055,
+          "after": 0.20983371697366238
+        },
+        "speedup": 1.9740625997998342
+      },
+      "full": {
+        "median_s": {
+          "before": 2.3879545889794827,
+          "after": 0.793718800181523
+        },
+        "speedup": 3.0085649835097255
+      }
+    },
+    "modeling_impeller": {
+      "preview": {
+        "median_s": {
+          "before": 3.3269487051293254,
+          "after": 1.7391314159613103
+        },
+        "speedup": 1.9129944261804646
+      },
+      "full": {
+        "median_s": {
+          "before": 15.212319275131449,
+          "after": 3.642469726037234
+        },
+        "speedup": 4.1763749376941135
+      }
+    },
+    "modeling_sheet_metal_bracket": {
+      "preview": {
+        "median_s": {
+          "before": 0.6921783611178398,
+          "after": 0.4435183070600033
+        },
+        "speedup": 1.5606534163294312
+      },
+      "full": {
+        "median_s": {
+          "before": 1.5483211961109191,
+          "after": 0.9050955611746758
+        },
+        "speedup": 1.7106715163882085
+      }
+    },
+    "modeling_sheet_metal_return_tray": {
+      "preview": {
+        "median_s": {
+          "before": 8.819822105113417,
+          "after": 4.958216782892123
+        },
+        "speedup": 1.7788294645658522
+      },
+      "full": {
+        "median_s": {
+          "before": 16.590279501862824,
+          "after": 7.253380770096555
+        },
+        "speedup": 2.28724784038078
+      }
+    },
+    "modeling_sheet_metal_enclosure": {
+      "preview": {
+        "median_s": {
+          "before": 4.017128427978605,
+          "after": 2.305868942057714
+        },
+        "speedup": 1.7421321544813364
+      },
+      "full": {
+        "median_s": {
+          "before": 8.33257438801229,
+          "after": 4.804468238959089
+        },
+        "speedup": 1.7343385310457546
+      }
+    },
+    "modeling_turbine_stage": {
+      "preview": {
+        "median_s": {
+          "before": 6.298534682020545,
+          "after": 5.424653309863061
+        },
+        "speedup": 1.1610944188025067
+      },
+      "full": {
+        "median_s": {
+          "before": 55.82072697393596,
+          "after": 10.721081419149414
+        },
+        "speedup": 5.206632128941023
+      }
+    },
+    "planetary_gearset": {
+      "preview": {
+        "median_s": {
+          "before": 9.47703325888142,
+          "after": 5.16044904012233
+        },
+        "speedup": 1.836474536459479
+      },
+      "full": {
+        "median_s": {
+          "before": 11.89836290688254,
+          "after": 7.4709141831845045
+        },
+        "speedup": 1.592624759853796
+      }
+    },
+    "turbo_rotor": {
+      "preview": {
+        "median_s": {
+          "before": 9.22262717387639,
+          "after": 5.361847135936841
+        },
+        "speedup": 1.7200466443855413
+      },
+      "full": {
+        "median_s": {
+          "before": 11.277189068961889,
+          "after": 6.606549521908164
+        },
+        "speedup": 1.7069710946032095
+      }
+    },
+    "airfoil_wing": {
+      "preview": {
+        "median_s": {
+          "before": 0.5445752509403974,
+          "after": 0.3881416742224246
+        },
+        "speedup": 1.40303215837712
+      },
+      "full": {
+        "median_s": {
+          "before": 6.691440162947401,
+          "after": 4.459486089879647
+        },
+        "speedup": 1.5004958033467015
+      }
+    },
+    "blocky": {
+      "preview": {
+        "median_s": {
+          "before": 2.6809463191311806,
+          "after": 1.6262982729822397
+        },
+        "speedup": 1.6484960745945885
+      },
+      "full": {
+        "median_s": {
+          "before": 11.518472135998309,
+          "after": 3.715586327947676
+        },
+        "speedup": 3.1000415868040396
+      }
+    },
+    "colored_rack": {
+      "preview": {
+        "median_s": {
+          "before": 1.1806640850845724,
+          "after": 0.8567374451085925
+        },
+        "speedup": 1.3780932441150882
+      },
+      "full": {
+        "median_s": {
+          "before": 3.58150709210895,
+          "after": 2.9761984669603407
+        },
+        "speedup": 1.2033831519867775
+      }
+    },
+    "finned_heatsink": {
+      "preview": {
+        "median_s": {
+          "before": 1.8784845629706979,
+          "after": 1.345450455090031
+        },
+        "speedup": 1.3961752035269102
+      },
+      "full": {
+        "median_s": {
+          "before": 5.197522763162851,
+          "after": 3.5727059689816087
+        },
+        "speedup": 1.4547860384503997
+      }
+    },
+    "grooved_pulley": {
+      "preview": {
+        "median_s": {
+          "before": 0.1488095559179783,
+          "after": 0.11757849296554923
+        },
+        "speedup": 1.2656188403569675
+      },
+      "full": {
+        "median_s": {
+          "before": 0.576720406068489,
+          "after": 0.30590940499678254
+        },
+        "speedup": 1.8852653650009705
+      }
+    },
+    "helical_auger": {
+      "preview": {
+        "median_s": {
+          "before": 0.6625927430577576,
+          "after": 0.4898114590905607
+        },
+        "speedup": 1.3527505956843113
+      },
+      "full": {
+        "median_s": {
+          "before": 5.694485194981098,
+          "after": 1.6276722189504653
+        },
+        "speedup": 3.4985454249830124
+      }
+    },
+    "lofted_duct": {
+      "preview": {
+        "median_s": {
+          "before": 0.2819820251315832,
+          "after": 0.1931918361224234
+        },
+        "speedup": 1.4595959683974145
+      },
+      "full": {
+        "median_s": {
+          "before": 2.1245637671090662,
+          "after": 1.4214306778740138
+        },
+        "speedup": 1.4946657618834462
+      }
+    },
+    "perforated_panel": {
+      "preview": {
+        "median_s": {
+          "before": 5.997667388059199,
+          "after": 2.413666375912726
+        },
+        "speedup": 2.4848783775227368
+      },
+      "full": {
+        "median_s": {
+          "before": 29.787271379027516,
+          "after": 10.247493508970365
+        },
+        "speedup": 2.9067860694864147
+      }
+    },
+    "shelled_enclosure": {
+      "preview": {
+        "median_s": {
+          "before": 0.28891483694314957,
+          "after": 0.18992769299075007
+        },
+        "speedup": 1.5211833113627111
+      },
+      "full": {
+        "median_s": {
+          "before": 1.0046777648385614,
+          "after": 0.5085343909449875
+        },
+        "speedup": 1.9756338661218409
+      }
+    },
+    "spherical_valve": {
+      "preview": {
+        "median_s": {
+          "before": 0.2936602260451764,
+          "after": 0.21221405710093677
+        },
+        "speedup": 1.383792525607768
+      },
+      "full": {
+        "median_s": {
+          "before": 1.3597296169027686,
+          "after": 0.9515315450262278
+        },
+        "speedup": 1.428990582614147
+      }
+    },
+    "swept_tube": {
+      "preview": {
+        "median_s": {
+          "before": 2.5285217638593167,
+          "after": 1.7516297060064971
+        },
+        "speedup": 1.4435252811646127
+      },
+      "full": {
+        "median_s": {
+          "before": 15.998292649863288,
+          "after": 8.640715394867584
+        },
+        "speedup": 1.8515009369902358
+      }
+    },
+    "varied_linkage": {
+      "preview": {
+        "median_s": {
+          "before": 2.323201147839427,
+          "after": 1.55229436699301
+        },
+        "speedup": 1.496624092207305
+      },
+      "full": {
+        "median_s": {
+          "before": 5.577565067913383,
+          "after": 3.25270889303647
+        },
+        "speedup": 1.7147446178949672
+      }
+    }
+  }
+}

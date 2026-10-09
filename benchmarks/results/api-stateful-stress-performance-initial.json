@@ -1,0 +1,592 @@
+{
+  "complete": true,
+  "method": "alternating subprocesses, one warm-up per workload; median time per invocation",
+  "shape_bounds_check": "BRepBndLib.AddOptimal without triangulation or shape-tolerance inflation",
+  "repeat": 9,
+  "fork_jobs": false,
+  "versions": {
+    "before": {
+      "file": "/tmp/cadquery-perf/api-reliability-image/cadquery/__init__.py",
+      "python": "3.12.14",
+      "cadquery": "2.9.0.dev0",
+      "ocp": "8.0.1.1",
+      "workloads": [
+        "iterative_pending_profiles",
+        "callback_array",
+        "direct_shape_array",
+        "wire_closure",
+        "nested_assembly"
+      ],
+      "dependencies": {
+        "cadquery-ocp": "8.0.1.1.0",
+        "cadquery-ocp-proxy": "8.0.1.1.0",
+        "multimethod": "2.1",
+        "numpy": "2.5.3",
+        "vtk": "9.6.2",
+        "nlopt": "2.11.0",
+        "casadi": "3.8.1",
+        "ezdxf": "1.4.4"
+      },
+      "steve": "",
+      "installed_steve": false,
+      "steve_runtime_root": null,
+      "steve_file": null,
+      "cadquery_workplane_sha256": "6ffd24900e0ef4fde7613b46731353189ac31a265d0e512fadc027d9e99887f6",
+      "cadquery_shapes_sha256": "d522646102fc899a439a14a0d6233984b7fa7b24070743b3c52ac6bed074058f",
+      "cadquery_geom_sha256": "30451bc5c7a4df94264fe90200c522e295464417bdcf7365c30019206c45b0c3",
+      "cadquery_assembly_sha256": "7f94c621e74455d038e28d44c7929663a96ee046fb808f0c61ad3c4e36e3b503",
+      "cadquery_assembly_exporter_sha256": "a50905d88db0ecbc41f99fc25378a5ecd51c85479c7ef19957d7f7b6608c1596",
+      "cadquery_assembly_importer_sha256": "5e941e7a8d5a54d1d7bde9048b1c638907ca82256b0f3c688207ddef1c614f8c",
+      "cadquery_step_materials_sha256": "cc8131b39ca6f1e8b20b54be6f7f85000154e6cf4135b98e9f3e1e7d2ad5b210",
+      "steve_model_sha256": null,
+      "steve_naming_sha256": null,
+      "steve_run_sha256": null,
+      "steve_recorder_class": null,
+      "steve_recorder_sha256": null,
+      "steve_recorder_backend_sha256": null,
+      "suite_sha256": "55206b8a0e8bb9cf3d43ab579f29c0e44f0dcf9f9a709e269ff69a810e5269c0",
+      "suite_timing_scope": "complete workload callable",
+      "native_preload": null,
+      "native_preload_sha256": null,
+      "native_brep_libraries": {
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKBRep-6da95aa3.so.8.0.1": "a3fa55a554f5c12668c99c612dd83d6b9f7a962daa1c2ff75845e73e4f18e537"
+      },
+      "native_geometry_libraries": {
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKBRep-6da95aa3.so.8.0.1": "a3fa55a554f5c12668c99c612dd83d6b9f7a962daa1c2ff75845e73e4f18e537",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKBool-d0b588ae.so.8.0.1": "aa332cebe3697e795cf950c81085c8b2b7e83bce2a8c804d1f1518e01cef2088",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKGeomBase-c01ccccb.so.8.0.1": "a4e6c99092dbfe6fc79f40a21eec1c9110510afa1816bddb86c973df563f375e",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKMath-75bf3d53.so.8.0.1": "f000169c0ef2c839338eabb3a88efc24b5120bf6944057088855c1968286b777",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKTopAlgo-18265c89.so.8.0.1": "2b6bacbae2e10caac60621244c46ec9ba85a172e67ea6ff8aa5df1a0cd68077b",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKernel-b8621df7.so.8.0.1": "d0295af624a204e1b3d51a8cc43783bf265b4048459a576f7406fa7c1d56b764"
+      },
+      "trace_file": null,
+      "trace_sha256": null,
+      "threads": 1,
+      "cpu_affinity": [
+        0
+      ],
+      "container": {
+        "image_ref": "steve-cad-runtime:api-reliability",
+        "image_id": "sha256:c9df57294e788c1eb28867ea28b5a4b27c193133ab00b5fe79f14e6be9ccf4f5"
+      }
+    },
+    "after": {
+      "file": "/tmp/cadquery-perf/api-stateful-preflight/cadquery/__init__.py",
+      "python": "3.12.14",
+      "cadquery": "2.9.0.dev0",
+      "ocp": "8.0.1.1",
+      "workloads": [
+        "iterative_pending_profiles",
+        "callback_array",
+        "direct_shape_array",
+        "wire_closure",
+        "nested_assembly"
+      ],
+      "dependencies": {
+        "cadquery-ocp": "8.0.1.1.0",
+        "cadquery-ocp-proxy": "8.0.1.1.0",
+        "multimethod": "2.1",
+        "numpy": "2.5.3",
+        "vtk": "9.6.2",
+        "nlopt": "2.11.0",
+        "casadi": "3.8.1",
+        "ezdxf": "1.4.4"
+      },
+      "steve": "",
+      "installed_steve": false,
+      "steve_runtime_root": null,
+      "steve_file": null,
+      "cadquery_workplane_sha256": "87f6c094f42fb4d78308791f75b352b07a8d63403564bde3ed3ed8db57e89f7e",
+      "cadquery_shapes_sha256": "d45c015c10dddda385c4439912d9a7b61feb63c946275024c2b3b25c0ea8b5e4",
+      "cadquery_geom_sha256": "30451bc5c7a4df94264fe90200c522e295464417bdcf7365c30019206c45b0c3",
+      "cadquery_assembly_sha256": "7f94c621e74455d038e28d44c7929663a96ee046fb808f0c61ad3c4e36e3b503",
+      "cadquery_assembly_exporter_sha256": "a50905d88db0ecbc41f99fc25378a5ecd51c85479c7ef19957d7f7b6608c1596",
+      "cadquery_assembly_importer_sha256": "5e941e7a8d5a54d1d7bde9048b1c638907ca82256b0f3c688207ddef1c614f8c",
+      "cadquery_step_materials_sha256": "cc8131b39ca6f1e8b20b54be6f7f85000154e6cf4135b98e9f3e1e7d2ad5b210",
+      "steve_model_sha256": null,
+      "steve_naming_sha256": null,
+      "steve_run_sha256": null,
+      "steve_recorder_class": null,
+      "steve_recorder_sha256": null,
+      "steve_recorder_backend_sha256": null,
+      "suite_sha256": "55206b8a0e8bb9cf3d43ab579f29c0e44f0dcf9f9a709e269ff69a810e5269c0",
+      "suite_timing_scope": "complete workload callable",
+      "native_preload": null,
+      "native_preload_sha256": null,
+      "native_brep_libraries": {
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKBRep-6da95aa3.so.8.0.1": "a3fa55a554f5c12668c99c612dd83d6b9f7a962daa1c2ff75845e73e4f18e537"
+      },
+      "native_geometry_libraries": {
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKBRep-6da95aa3.so.8.0.1": "a3fa55a554f5c12668c99c612dd83d6b9f7a962daa1c2ff75845e73e4f18e537",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKBool-d0b588ae.so.8.0.1": "aa332cebe3697e795cf950c81085c8b2b7e83bce2a8c804d1f1518e01cef2088",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKGeomBase-c01ccccb.so.8.0.1": "a4e6c99092dbfe6fc79f40a21eec1c9110510afa1816bddb86c973df563f375e",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKMath-75bf3d53.so.8.0.1": "f000169c0ef2c839338eabb3a88efc24b5120bf6944057088855c1968286b777",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKTopAlgo-18265c89.so.8.0.1": "2b6bacbae2e10caac60621244c46ec9ba85a172e67ea6ff8aa5df1a0cd68077b",
+        "/usr/local/lib/python3.12/site-packages/cadquery_ocp.libs/libTKernel-b8621df7.so.8.0.1": "d0295af624a204e1b3d51a8cc43783bf265b4048459a576f7406fa7c1d56b764"
+      },
+      "trace_file": null,
+      "trace_sha256": null,
+      "threads": 1,
+      "cpu_affinity": [
+        0
+      ],
+      "container": {
+        "image_ref": "steve-cad-runtime:api-reliability",
+        "image_id": "sha256:c9df57294e788c1eb28867ea28b5a4b27c193133ab00b5fe79f14e6be9ccf4f5"
+      }
+    }
+  },
+  "workloads": {
+    "iterative_pending_profiles": {
+      "median_s": {
+        "before": 0.28902161307632923,
+        "after": 0.299433738226071
+      },
+      "samples_s": {
+        "before": [
+          0.2851477849762887,
+          0.28902161307632923,
+          0.2866847040131688,
+          0.28703693812713027,
+          0.30437793699093163,
+          0.35588781302794814,
+          0.2760480800643563,
+          0.3360813311301172,
+          0.30245185317471623
+        ],
+        "after": [
+          0.3762844861485064,
+          0.2987002399750054,
+          0.28373625315725803,
+          0.3530700921546668,
+          0.2993716581258923,
+          0.2860344781074673,
+          0.3090305340010673,
+          0.3095324421301484,
+          0.299433738226071
+        ]
+      },
+      "cpu_samples_s": {
+        "before": [
+          0.28502780299999975,
+          0.2889724880000002,
+          0.2865059190000001,
+          0.2869741079999999,
+          0.3039033879999997,
+          0.35575296199999995,
+          0.2757685360000002,
+          0.33598993400000055,
+          0.3023777860000001
+        ],
+        "after": [
+          0.3762238059999996,
+          0.298543349,
+          0.283642827,
+          0.3530352780000001,
+          0.29919115499999993,
+          0.285846716,
+          0.30897540700000015,
+          0.3094191869999996,
+          0.2992955870000005
+        ]
+      },
+      "median_cpu_s": {
+        "before": 0.2889724880000002,
+        "after": 0.2992955870000005
+      },
+      "batch_iterations": 1,
+      "speedup": 0.9652272812962691,
+      "checks": {
+        "before": {
+          "valid": true,
+          "solids": 0,
+          "volume": 7539.822368615429,
+          "area": 0.0,
+          "bounds": [
+            -1.0,
+            -1.0,
+            0.0,
+            3598.0,
+            1.0,
+            0.0
+          ]
+        },
+        "after": {
+          "valid": true,
+          "solids": 0,
+          "volume": 7539.822368615429,
+          "area": 0.0,
+          "bounds": [
+            -1.0,
+            -1.0,
+            0.0,
+            3598.0,
+            1.0,
+            0.0
+          ]
+        }
+      }
+    },
+    "callback_array": {
+      "median_s": {
+        "before": 0.497569871135056,
+        "after": 0.517049556132406
+      },
+      "samples_s": {
+        "before": [
+          0.5208409489132464,
+          0.5133983830455691,
+          0.497569871135056,
+          0.49762457609176636,
+          0.46208268706686795,
+          0.49442342994734645,
+          0.5597463950980455,
+          0.4574705739505589,
+          0.4596511840354651
+        ],
+        "after": [
+          0.5174766820855439,
+          0.5209554671309888,
+          0.517049556132406,
+          0.530334796058014,
+          0.4916639488656074,
+          0.5205803860444576,
+          0.4680927339941263,
+          0.488259012112394,
+          0.49209518707357347
+        ]
+      },
+      "cpu_samples_s": {
+        "before": [
+          0.5205015719999997,
+          0.5130471200000004,
+          0.4973171099999991,
+          0.4974528340000006,
+          0.4616069759999988,
+          0.4942755209999987,
+          0.5593847239999992,
+          0.45728122200000065,
+          0.45940435800000046
+        ],
+        "after": [
+          0.5170694999999998,
+          0.5207087709999998,
+          0.5167924930000005,
+          0.5300534500000005,
+          0.4914969970000005,
+          0.5195500670000008,
+          0.46791372399999887,
+          0.4880729049999992,
+          0.4918270239999991
+        ]
+      },
+      "median_cpu_s": {
+        "before": 0.4973171099999991,
+        "after": 0.5167924930000005
+      },
+      "batch_iterations": 1,
+      "speedup": 0.9623253037038453,
+      "checks": {
+        "before": {
+          "valid": true,
+          "solids": 900,
+          "volume": 899.9999999999999,
+          "area": 5400.0,
+          "bounds": [
+            -43.5,
+            -43.5,
+            0.0,
+            44.5,
+            44.5,
+            1.0
+          ]
+        },
+        "after": {
+          "valid": true,
+          "solids": 900,
+          "volume": 899.9999999999999,
+          "area": 5400.0,
+          "bounds": [
+            -43.5,
+            -43.5,
+            0.0,
+            44.5,
+            44.5,
+            1.0
+          ]
+        }
+      }
+    },
+    "direct_shape_array": {
+      "median_s": {
+        "before": 0.5122735281474888,
+        "after": 0.4915461800992489
+      },
+      "samples_s": {
+        "before": [
+          0.5617652868386358,
+          0.5760785168968141,
+          0.4857801981270313,
+          0.5673256509471685,
+          0.47782193310558796,
+          0.5122735281474888,
+          0.47900963900610805,
+          0.535367398057133,
+          0.45105896703898907
+        ],
+        "after": [
+          0.4703796240501106,
+          0.614929337054491,
+          0.4586032589431852,
+          0.5653360579162836,
+          0.4703419159632176,
+          0.509251139126718,
+          0.46871714014559984,
+          0.4915461800992489,
+          0.5011537128593773
+        ]
+      },
+      "cpu_samples_s": {
+        "before": [
+          0.5614733789999988,
+          0.575898338,
+          0.4855833880000002,
+          0.5671076240000001,
+          0.4776294639999996,
+          0.5118227849999997,
+          0.4787468170000011,
+          0.5351169340000013,
+          0.4506309590000015
+        ],
+        "after": [
+          0.4701129660000003,
+          0.6147257370000005,
+          0.4582246259999998,
+          0.5650733099999989,
+          0.46989010699999945,
+          0.5090198559999983,
+          0.4682407919999996,
+          0.49131046599999806,
+          0.5008728679999983
+        ]
+      },
+      "median_cpu_s": {
+        "before": 0.5118227849999997,
+        "after": 0.49131046599999806
+      },
+      "batch_iterations": 1,
+      "speedup": 1.0421676515603373,
+      "checks": {
+        "before": {
+          "valid": true,
+          "solids": 900,
+          "volume": 899.9999999999999,
+          "area": 5400.0,
+          "bounds": [
+            -43.5,
+            -43.5,
+            0.0,
+            44.5,
+            44.5,
+            1.0
+          ]
+        },
+        "after": {
+          "valid": true,
+          "solids": 900,
+          "volume": 899.9999999999999,
+          "area": 5400.0,
+          "bounds": [
+            -43.5,
+            -43.5,
+            0.0,
+            44.5,
+            44.5,
+            1.0
+          ]
+        }
+      }
+    },
+    "wire_closure": {
+      "median_s": {
+        "before": 0.10449597507249564,
+        "after": 0.10250532755162567
+      },
+      "samples_s": {
+        "before": [
+          0.10452894645277411,
+          0.10449597507249564,
+          0.10210958495736122,
+          0.10218252253253013,
+          0.09979106043465436,
+          0.1167856064857915,
+          0.11362217646092176,
+          0.09794043703004718,
+          0.13140154792927206
+        ],
+        "after": [
+          0.11017582344356924,
+          0.12036197853740305,
+          0.10379202454350889,
+          0.10097722848877311,
+          0.10281834553461522,
+          0.10223988548386842,
+          0.10250532755162567,
+          0.09977451304439455,
+          0.09922450047452003
+        ]
+      },
+      "cpu_samples_s": {
+        "before": [
+          0.10447172349999967,
+          0.10444443199999931,
+          0.10205460199999905,
+          0.10212284149999995,
+          0.09975197049999984,
+          0.11671560999999997,
+          0.11354290000000056,
+          0.09787837300000035,
+          0.13134087449999932
+        ],
+        "after": [
+          0.11015147650000046,
+          0.12026295150000088,
+          0.10373152400000052,
+          0.10094005749999901,
+          0.1027664925000007,
+          0.10216463899999972,
+          0.10246301950000003,
+          0.0996202489999991,
+          0.09917501399999828
+        ]
+      },
+      "median_cpu_s": {
+        "before": 0.10444443199999931,
+        "after": 0.10246301950000003
+      },
+      "batch_iterations": 2,
+      "speedup": 1.019419942050011,
+      "checks": {
+        "before": {
+          "valid": true,
+          "solids": 60,
+          "volume": 719.999999999999,
+          "area": 2160.0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            4.0,
+            3.0,
+            2.0
+          ]
+        },
+        "after": {
+          "valid": true,
+          "solids": 60,
+          "volume": 719.999999999999,
+          "area": 2160.0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            4.0,
+            3.0,
+            2.0
+          ]
+        }
+      }
+    },
+    "nested_assembly": {
+      "median_s": {
+        "before": 0.01781380665488541,
+        "after": 0.01625508531772842
+      },
+      "samples_s": {
+        "before": [
+          0.02058209098565082,
+          0.01781380665488541,
+          0.03236349749689301,
+          0.013565517690343162,
+          0.015380536012041071,
+          0.0343091293082883,
+          0.0172717678360641,
+          0.013679152975479761,
+          0.03789642930496484
+        ],
+        "after": [
+          0.015000638668425381,
+          0.01773482033361991,
+          0.03292052882413069,
+          0.015968412820560236,
+          0.015214549843221903,
+          0.038821945005717375,
+          0.01625508531772842,
+          0.013954812660813332,
+          0.03130908764433116
+        ]
+      },
+      "cpu_samples_s": {
+        "before": [
+          0.020568588666666443,
+          0.01780772283333339,
+          0.03234133283333366,
+          0.013564426333333657,
+          0.015373220500000192,
+          0.034255227500000394,
+          0.017261966666666833,
+          0.013673457000000036,
+          0.03787290916666682
+        ],
+        "after": [
+          0.014990324333333286,
+          0.017726673166666984,
+          0.03289076050000025,
+          0.015959056666666527,
+          0.015205895833332761,
+          0.03880048516666671,
+          0.016248822000000256,
+          0.013946268999999845,
+          0.03128671866666721
+        ]
+      },
+      "median_cpu_s": {
+        "before": 0.01780772283333339,
+        "after": 0.016248822000000256
+      },
+      "batch_iterations": 6,
+      "speedup": 1.0958913045788194,
+      "checks": {
+        "before": {
+          "valid": true,
+          "solids": 300,
+          "volume": 1799.9999999999804,
+          "area": 6600.0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            898.0,
+            2.0,
+            3.0
+          ]
+        },
+        "after": {
+          "valid": true,
+          "solids": 300,
+          "volume": 1799.9999999999804,
+          "area": 6600.0,
+          "bounds": [
+            0.0,
+            0.0,
+            0.0,
+            898.0,
+            2.0,
+            3.0
+          ]
+        }
+      }
+    }
+  },
+  "geometric_mean_speedup": 1.015785332978623
+}

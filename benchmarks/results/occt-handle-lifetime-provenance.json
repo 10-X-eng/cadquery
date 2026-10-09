@@ -1,0 +1,17 @@
+{
+  "occt_commit": "6003228c50f2d63ad2866ecd97c7de3f1be4965f",
+  "branch": "steve/handle-lifetime-reliability",
+  "scope": "Compiled native source/header lifetime checks, not installed-runtime validation.",
+  "standard_native_checks_passed": 26,
+  "alternate_upcast_checks_passed": 12,
+  "alternate_mode": "OCCT_HANDLE_NOCAST",
+  "source_sha256": {
+    "src/FoundationClasses/TKernel/Standard/Standard_Handle.hxx": "dba94a643b61be98f23a052740cd9532556861d2dbd2d66b7d945c2962cce4fd",
+    "src/FoundationClasses/TKernel/GTests/Standard_Handle_Test.cxx": "91b2bfa2a7c3758d08ba5a2f0983fa7ac6ed1005f8fd1176ed25efe9704f5619"
+  },
+  "linked_kernel_sha256": "377cf7560fcccd63b3c3cce90445a354c943a34f784c781c2b8f11449e8700aa",
+  "full_native_runtime_rebuilt": false,
+  "python_bindings_rebuilt": false,
+  "runtime_geometry_export_speed_validation": "pending",
+  "upstream_prs_opened": false
+}

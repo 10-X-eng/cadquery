@@ -1,0 +1,934 @@
+{
+  "tests": 78,
+  "failures": 0,
+  "disabled": 0,
+  "errors": 0,
+  "timestamp": "2026-10-09T00:15:17Z",
+  "time": "0.202s",
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "BRepTools_AffineMesh",
+      "tests": 6,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:17Z",
+      "time": "0.044s",
+      "testsuite": [
+        {
+          "name": "AuthoredNormalsAndLocatedNodes",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_AffineMesh_Test.cxx",
+          "line": 64,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_AffineMesh"
+        },
+        {
+          "name": "MaximumEuclideanStretch",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_AffineMesh_Test.cxx",
+          "line": 105,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_AffineMesh"
+        },
+        {
+          "name": "CollapsedTangentsDiscardUndefinedNormals",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_AffineMesh_Test.cxx",
+          "line": 131,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_AffineMesh"
+        },
+        {
+          "name": "LocatedEdgePolygonWithoutParameters",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_AffineMesh_Test.cxx",
+          "line": 144,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_AffineMesh"
+        },
+        {
+          "name": "LocatedSphereSurfaceTangentsAndPrecision",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_AffineMesh_Test.cxx",
+          "line": 171,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0.016s",
+          "classname": "BRepTools_AffineMesh"
+        },
+        {
+          "name": "NativeScaleAndExplicitMatrixAgree",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_AffineMesh_Test.cxx",
+          "line": 213,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0.026s",
+          "classname": "BRepTools_AffineMesh"
+        }
+      ]
+    },
+    {
+      "name": "BRepTools_ReShapeTest",
+      "tests": 15,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:17Z",
+      "time": "0s",
+      "testsuite": [
+        {
+          "name": "ValueLeaf_FollowsChainToLeaf",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 43,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "ValueLeaf_UnrecordedShapeIsIdentity",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 60,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "ValueLeaf_ChainEndingInRemoveReturnsNull",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 69,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Replace_DirectCycleHandledByApply",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 83,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Replace_LongerCycleHandledByApply",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 104,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Apply_HandlesStructuralContainmentWithoutCrash",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 127,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Apply_DiamondSharingIsProcessedCorrectly",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 152,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Clear_DropsAllBindings",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 191,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Replace_LastWins",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 207,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Replace_SelfIsNoOp",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 222,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Apply_RemoveDropsSubShapeFromParent",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 235,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Apply_SharedEdgeAcrossTwoParents",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 267,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Apply_NoBindingsIsIdentity",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 317,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "Apply_DeepStructuralContainmentWithoutCrash",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 331,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        },
+        {
+          "name": "ValueLeaf_ConsidersLocationMode",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/BRepTools_ReShape_Test.cxx",
+          "line": 356,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "BRepTools_ReShapeTest"
+        }
+      ]
+    },
+    {
+      "name": "Extrema_ExtCS_LinePlane",
+      "tests": 5,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:17Z",
+      "time": "0.003s",
+      "testsuite": [
+        {
+          "name": "InteriorEdgesAndCorners",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKGeomBase\/GTests\/Extrema_ExtCS_LinePlane_Test.cxx",
+          "line": 77,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0.001s",
+          "classname": "Extrema_ExtCS_LinePlane"
+        },
+        {
+          "name": "ShallowTransverseIntersection",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKGeomBase\/GTests\/Extrema_ExtCS_LinePlane_Test.cxx",
+          "line": 88,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "Extrema_ExtCS_LinePlane"
+        },
+        {
+          "name": "ParallelDistance",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKGeomBase\/GTests\/Extrema_ExtCS_LinePlane_Test.cxx",
+          "line": 98,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "Extrema_ExtCS_LinePlane"
+        },
+        {
+          "name": "ExplicitTrimsExcludeIntersection",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKGeomBase\/GTests\/Extrema_ExtCS_LinePlane_Test.cxx",
+          "line": 111,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "Extrema_ExtCS_LinePlane"
+        },
+        {
+          "name": "ShortTrimmedCurveKeepsPointAtReportedParameter",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKGeomBase\/GTests\/Extrema_ExtCS_LinePlane_Test.cxx",
+          "line": 140,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "Extrema_ExtCS_LinePlane"
+        }
+      ]
+    },
+    {
+      "name": "Extrema_ExtPC_Test",
+      "tests": 1,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:17Z",
+      "time": "0s",
+      "testsuite": [
+        {
+          "name": "Bug24945_CylinderParameterNormalization",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKGeomBase\/GTests\/Extrema_ExtPC_Test.cxx",
+          "line": 27,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0s",
+          "classname": "Extrema_ExtPC_Test"
+        }
+      ]
+    },
+    {
+      "name": "BSplCLib_Bohm_Test",
+      "tests": 3,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:17Z",
+      "time": "0.113s",
+      "testsuite": [
+        {
+          "name": "MatchesOriginalArithmetic",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKMath\/GTests\/BSplCLib_Bohm_Test.cxx",
+          "line": 145,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0.027s",
+          "classname": "BSplCLib_Bohm_Test"
+        },
+        {
+          "name": "RoundingModes",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKMath\/GTests\/BSplCLib_Bohm_Test.cxx",
+          "line": 150,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:17Z",
+          "time": "0.085s",
+          "classname": "BSplCLib_Bohm_Test"
+        },
+        {
+          "name": "ExtremeKnotScales",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKMath\/GTests\/BSplCLib_Bohm_Test.cxx",
+          "line": 162,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "BSplCLib_Bohm_Test"
+        }
+      ]
+    },
+    {
+      "name": "BRepFill_Evolved_Test",
+      "tests": 2,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0.018s",
+      "testsuite": [
+        {
+          "name": "InconsistentGeneratedEdgesRaiseInsteadOfCrashing",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingAlgorithms\/TKBool\/GTests\/BRepFill_Evolved_Test.cxx",
+          "line": 44,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.003s",
+          "classname": "BRepFill_Evolved_Test"
+        },
+        {
+          "name": "FailedReuseClearsDoneAndCanRecover",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingAlgorithms\/TKBool\/GTests\/BRepFill_Evolved_Test.cxx",
+          "line": 58,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.014s",
+          "classname": "BRepFill_Evolved_Test"
+        }
+      ]
+    },
+    {
+      "name": "NCollection_IncAllocator_Test",
+      "tests": 5,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0.012s",
+      "testsuite": [
+        {
+          "name": "PayloadAlignmentDoesNotDependOnBlockAlignment",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_IncAllocator_Test.cxx",
+          "line": 27,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_IncAllocator_Test"
+        },
+        {
+          "name": "OddSizesStayAlignedAcrossResets",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_IncAllocator_Test.cxx",
+          "line": 44,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_IncAllocator_Test"
+        },
+        {
+          "name": "ConcurrentAllocationsAreAlignedAndDisjoint",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_IncAllocator_Test.cxx",
+          "line": 66,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.007s",
+          "classname": "NCollection_IncAllocator_Test"
+        },
+        {
+          "name": "OversizedRequestsDoNotTruncateBlockSize",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_IncAllocator_Test.cxx",
+          "line": 117,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_IncAllocator_Test"
+        },
+        {
+          "name": "FailedSystemAllocationRaisesInsteadOfDereferencingNull",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_IncAllocator_Test.cxx",
+          "line": 140,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.004s",
+          "classname": "NCollection_IncAllocator_Test"
+        }
+      ]
+    },
+    {
+      "name": "BRepGProp_SharedVolume_Test",
+      "tests": 4,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0.005s",
+      "testsuite": [
+        {
+          "name": "RepeatedNonInitialPlacementIsSkipped",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingAlgorithms\/TKTopAlgo\/GTests\/BRepGProp_SharedVolume_Test.cxx",
+          "line": 53,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.001s",
+          "classname": "BRepGProp_SharedVolume_Test"
+        },
+        {
+          "name": "InternalAndExternalSolidsHaveNoVolumeContribution",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingAlgorithms\/TKTopAlgo\/GTests\/BRepGProp_SharedVolume_Test.cxx",
+          "line": 63,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.003s",
+          "classname": "BRepGProp_SharedVolume_Test"
+        },
+        {
+          "name": "SharedFacesAcrossDifferentSolidsAreSkipped",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingAlgorithms\/TKTopAlgo\/GTests\/BRepGProp_SharedVolume_Test.cxx",
+          "line": 77,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "BRepGProp_SharedVolume_Test"
+        },
+        {
+          "name": "SharedFreeFacesAreSkipped",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingAlgorithms\/TKTopAlgo\/GTests\/BRepGProp_SharedVolume_Test.cxx",
+          "line": 88,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "BRepGProp_SharedVolume_Test"
+        }
+      ]
+    },
+    {
+      "name": "NCollection_BaseAllocatorTest",
+      "tests": 7,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0s",
+      "testsuite": [
+        {
+          "name": "DefaultInstance",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 40,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        },
+        {
+          "name": "Allocate",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 55,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        },
+        {
+          "name": "AllocateStruct",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 80,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        },
+        {
+          "name": "AllocateArray",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 101,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        },
+        {
+          "name": "UsageWithVector",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 133,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        },
+        {
+          "name": "CopyAndMove",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 179,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        },
+        {
+          "name": "BigAllocation",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/NCollection_BaseAllocator_Test.cxx",
+          "line": 207,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "NCollection_BaseAllocatorTest"
+        }
+      ]
+    },
+    {
+      "name": "NativePackageContract",
+      "tests": 1,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0.001s",
+      "testsuite": [
+        {
+          "name": "UnixSignalsRemainCatchable",
+          "file": "\/home\/robit\/steve\/cadquery\/benchmarks\/experimental\/native_package_contract.cxx",
+          "line": 10,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0.001s",
+          "classname": "NativePackageContract"
+        }
+      ]
+    },
+    {
+      "name": "TopLoc_SListOfItemLocation_Test",
+      "tests": 3,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0s",
+      "testsuite": [
+        {
+          "name": "UniqueListCanAdvanceToItsTail",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKMath\/GTests\/TopLoc_SListOfItemLocation_Test.cxx",
+          "line": 30,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopLoc_SListOfItemLocation_Test"
+        },
+        {
+          "name": "AssignmentFromOwnedDescendantRetainsIt",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKMath\/GTests\/TopLoc_SListOfItemLocation_Test.cxx",
+          "line": 45,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopLoc_SListOfItemLocation_Test"
+        },
+        {
+          "name": "EmptySelfAndSharedAssignmentsPreserveValues",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKMath\/GTests\/TopLoc_SListOfItemLocation_Test.cxx",
+          "line": 57,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopLoc_SListOfItemLocation_Test"
+        }
+      ]
+    },
+    {
+      "name": "TopoDS_Iterator_Test",
+      "tests": 17,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0.001s",
+      "testsuite": [
+        {
+          "name": "OCC30708_1_InitializeWithNullShape",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 42,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "EmptyCompound",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 58,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "CompoundWithVertices",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 72,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "WireWithEdges",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 100,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "EdgeWithVertices",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 132,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "VertexNoChildren",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 150,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "CumulativeOrientation",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 162,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "ReInitialization",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 192,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "BoxSolidIteration",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 235,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "ManyChildren",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 264,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "DefaultConstructorThenInitialize",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 292,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "ValueThrowsWhenNotMore",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 314,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "CumulativeLocation",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 332,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "NestedCompounds",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 366,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "FaceWithWires",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 406,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "ShapeIdentity",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 430,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        },
+        {
+          "name": "ShellWithFaces",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopoDS_Iterator_Test.cxx",
+          "line": 453,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopoDS_Iterator_Test"
+        }
+      ]
+    },
+    {
+      "name": "TopExp_Test",
+      "tests": 9,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T00:15:18Z",
+      "time": "0.001s",
+      "testsuite": [
+        {
+          "name": "MapShapes_Faces",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 30,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "MapShapes_Edges",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 42,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "MapShapes_Vertices",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 54,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "FirstVertex_LastVertex",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 66,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "Vertices",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 86,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "CommonVertex",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 104,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "Explorer_NestedFaceEdge_Terminates",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 134,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "Explorer_ReInit_Terminates",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 163,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        },
+        {
+          "name": "MapShapesAndAncestors",
+          "file": "\/home\/robit\/steve\/occt\/src\/ModelingData\/TKBRep\/GTests\/TopExp_Test.cxx",
+          "line": 185,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T00:15:18Z",
+          "time": "0s",
+          "classname": "TopExp_Test"
+        }
+      ]
+    }
+  ]
+}

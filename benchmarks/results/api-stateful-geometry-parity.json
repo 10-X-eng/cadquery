@@ -1,0 +1,338 @@
+{
+  "plate_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "plate_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "bearing_pedestal_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "bearing_pedestal_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "design_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "design_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_housing_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_housing_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_flange_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_flange_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_impeller_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_impeller_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_sheet_metal_bracket_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_sheet_metal_bracket_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_sheet_metal_return_tray_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_sheet_metal_return_tray_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_sheet_metal_enclosure_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_sheet_metal_enclosure_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_turbine_stage_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "modeling_turbine_stage_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "planetary_gearset_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "planetary_gearset_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "turbo_rotor_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "turbo_rotor_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "airfoil_wing_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "airfoil_wing_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "blocky_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "blocky_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "colored_rack_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "colored_rack_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "finned_heatsink_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "finned_heatsink_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "grooved_pulley_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "grooved_pulley_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "helical_auger_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "helical_auger_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "lofted_duct_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "lofted_duct_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "perforated_panel_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "perforated_panel_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "shelled_enclosure_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "shelled_enclosure_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "spherical_valve_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "spherical_valve_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "swept_tube_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "swept_tube_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "varied_linkage_preview": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  },
+  "varied_linkage_full": {
+    "input_unchanged": true,
+    "geometry_matches": true,
+    "artifact_structure_and_geometry_match": true,
+    "native_libraries_unchanged": true,
+    "passed": true
+  }
+}

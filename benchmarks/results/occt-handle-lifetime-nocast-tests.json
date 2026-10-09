@@ -1,0 +1,142 @@
+{
+  "tests": 12,
+  "failures": 0,
+  "disabled": 0,
+  "errors": 0,
+  "timestamp": "2026-10-09T09:24:12Z",
+  "time": "0s",
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "Standard_Handle_Test",
+      "tests": 12,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-09T09:24:12Z",
+      "time": "0s",
+      "testsuite": [
+        {
+          "name": "OCC24533_IsNullAndPointerChecks",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 42,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "CopyAssignmentFromOwnedChild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 66,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "PointerAssignmentFromOwnedChild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 80,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "MoveAssignmentFromOwnedChild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 94,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "CopyAssignmentFromOwnedGrandchild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 108,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "MoveAssignmentFromOwnedGrandchild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 123,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "UpcastCopyAssignmentFromOwnedChild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 138,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "UpcastMoveAssignmentFromOwnedChild",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 153,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "SelfAssignmentPreservesReferenceCount",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 168,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "MoveAssignmentReleasesPreviousDestination",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 183,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "MoveAssignmentBetweenAliases",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 198,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        },
+        {
+          "name": "NullAssignmentsReleasePreviousDestination",
+          "file": "\/home\/robit\/steve\/occt\/src\/FoundationClasses\/TKernel\/GTests\/Standard_Handle_Test.cxx",
+          "line": 213,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-09T09:24:12Z",
+          "time": "0s",
+          "classname": "Standard_Handle_Test"
+        }
+      ]
+    }
+  ]
+}
