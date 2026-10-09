@@ -287,18 +287,30 @@ class Assembly(object):
                     f"Unique name is required. {subassy.name} is already in the assembly"
                 )
 
-        subassy.parent = self
-        self.children.append(subassy)
         # Propagate relative paths through every owner. Updating only this
         # node leaves the root's lookup stale when an owned subassembly is
         # edited in place.
         added = subassy._flatten()
         owner = self
+        updates = []
         while owner is not None:
-            owner.objects.update(added)
+            # A literal name containing '/' can collide with a descendant
+            # path, including one in an ancestor's index. Check every owner
+            # before modifying the tree or any lookup dictionary.
+            for key in added:
+                if key in owner.objects:
+                    raise ValueError(
+                        f"Unique path is required. {key} is already in the assembly"
+                    )
+            updates.append((owner, added))
             if owner.parent is not None:
                 added = {f"{owner.name}{PATH_DELIM}{k}": v for k, v in added.items()}
             owner = owner.parent
+
+        subassy.parent = self
+        self.children.append(subassy)
+        for owner, added in updates:
+            owner.objects.update(added)
 
         return self
 

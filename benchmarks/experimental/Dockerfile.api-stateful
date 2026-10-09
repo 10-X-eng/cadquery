@@ -1,0 +1,7 @@
+FROM steve-cad-runtime:api-reliability
+USER 0
+ARG CADQUERY_COMMIT
+LABEL org.steve.cadquery.repository="https://github.com/10-X-eng/cadquery" org.steve.cadquery.revision="${CADQUERY_COMMIT}"
+COPY cadquery /usr/local/lib/python3.12/site-packages/cadquery/
+RUN python -c 'import cadquery as cq; assert cq.Workplane().rect(2, 3).twistExtrude(4, 0).val().isValid()'
+USER 65532:65532

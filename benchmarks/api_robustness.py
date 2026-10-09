@@ -54,7 +54,62 @@ EDGE_CASES = (
     "circle_inf",
     "extrude_nan",
     "extrude_inf",
+    "callback_none",
+    "callback_retry",
+    "callback_prototype",
+    "close_retry",
+    "zero_twist",
+    "assembly_collision",
+    "free_functions",
+    "operators",
 )
+
+OPERATORS = {
+    "__init__",
+    "__iter__",
+    "__getitem__",
+    "__len__",
+    "__bool__",
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__rmul__",
+    "__truediv__",
+    "__and__",
+    "__or__",
+    "__invert__",
+    "__neg__",
+    "__abs__",
+    "__eq__",
+    "__ne__",
+    "__call__",
+    "__getstate__",
+    "__setstate__",
+}
+
+
+def member_info(value):
+    try:
+        signature = str(inspect.signature(value))
+    except (TypeError, ValueError):
+        signature = None
+    info = {
+        "signature": signature,
+        "kind": "property" if isinstance(value, property) else "callable",
+    }
+    dispatcher = getattr(value, "__func__", value)
+    if isinstance(dispatcher, dict):
+        # Dispatchers expose implementations separately; a single signature
+        # otherwise hides legitimate wire/face and tuple/vector overloads.
+        overloads = set()
+        for function in dispatcher.values():
+            if callable(function):
+                try:
+                    overloads.add(str(inspect.signature(function)))
+                except (TypeError, ValueError):
+                    pass
+        info["overloads"] = sorted(overloads)
+    return info
 
 
 def inventory(cq):
@@ -63,22 +118,21 @@ def inventory(cq):
         cls = getattr(cq, name)
         members = {}
         for member, value in inspect.getmembers(cls):
-            if member.startswith("_") or not (
+            if (member.startswith("_") and member not in OPERATORS) or not (
                 callable(value) or isinstance(value, property)
             ):
                 continue
-            try:
-                signature = str(inspect.signature(value))
-            except (TypeError, ValueError):
-                signature = None
-            members[member] = {
-                "signature": signature,
-                "kind": "property" if isinstance(value, property) else "callable",
-            }
+            if member in OPERATORS and not getattr(value, "__module__", "").startswith(
+                "cadquery"
+            ):
+                continue
+            members[member] = member_info(value)
         result[name] = members
-    for module in (cq.selectors, cq.exporters, cq.importers):
+    from cadquery import func, cqgi
+
+    for module in (cq.selectors, cq.exporters, cq.importers, func, cqgi):
         result[module.__name__] = {
-            name: {"kind": "callable"}
+            name: member_info(value)
             for name, value in inspect.getmembers(module)
             if not name.startswith("_")
             and callable(value)
@@ -194,6 +248,98 @@ def workflow(cq, family, seed):
 
 
 def edge_case(cq, name):
+    if name == "callback_none":
+        for method in ("each", "eachpoint"):
+            for local in (False, True):
+                wp = cq.Workplane().pushPoints([(0, 0), (4, 0)])
+                assert getattr(wp, method)(lambda v: None, local).vals() == []
+        return
+    if name == "callback_retry":
+        wp = cq.Workplane().pushPoints([(0, 0), (4, 0)])
+        calls = []
+
+        def fail(point):
+            calls.append(point)
+            if len(calls) == 2:
+                raise ValueError("callback failure")
+            return cq.Wire.makeCircle(1, point, (0, 0, 1))
+
+        try:
+            wp.each(fail, combine=False)
+        except ValueError:
+            assert not wp.ctx.pendingWires
+        else:
+            raise AssertionError("callback did not fail")
+        result = wp.each(
+            lambda p: cq.Wire.makeCircle(1, p, (0, 0, 1)), combine=False
+        ).extrude(3)
+        close(check(result).Volume(), 6 * math.pi)
+        return
+    if name == "callback_prototype":
+        wp = cq.Workplane(origin=(7, -3, 5)).pushPoints([(0, 0), (4, 0)])
+        shared = cq.Wire.makeCircle(1, (0, 0, 0), (0, 0, 1))
+        result = wp.eachpoint(lambda l: shared, True)
+        assert all(math.isclose(v, 0, abs_tol=1e-10) for v in shared.Center().toTuple())
+        assert all(
+            all(
+                math.isclose(a, b, abs_tol=1e-10)
+                for a, b in zip(w.Center().toTuple(), (7, -3, 5))
+            )
+            for w in result.vals()
+        )
+        return
+    if name == "close_retry":
+        from unittest.mock import patch
+
+        wp = cq.Workplane().lineTo(4, 0).lineTo(4, 3)
+        before = wp.ctx.pendingEdges[:]
+        with patch.object(cq.Wire, "assembleEdges", side_effect=ValueError("failure")):
+            try:
+                wp.close()
+            except ValueError:
+                assert wp.ctx.pendingEdges == before and wp.ctx.firstPoint is not None
+            else:
+                raise AssertionError("wire assembly did not fail")
+        close(check(wp.close().extrude(2)).Volume(), 12)
+        return
+    if name == "zero_twist":
+        close(
+            check(cq.Workplane().rect(6, 4).rect(2, 1).twistExtrude(4, 0)).Volume(), 88
+        )
+        return
+    if name == "assembly_collision":
+        shape = cq.Solid.makeBox(1, 2, 3)
+        root = cq.Assembly(name="root").add(shape, name="sub/part")
+        original = root.objects.copy()
+        try:
+            root.add(cq.Assembly(name="sub").add(shape, name="part"))
+        except ValueError:
+            assert root.objects == original and len(root.children) == 1
+        else:
+            raise AssertionError("assembly path silently overwritten")
+        close(check(root).Volume(), 6)
+        return
+    if name == "free_functions":
+        from cadquery import func
+
+        shape = func.extrude(func.face(func.rect(6, 4)), (0, 0, 4))
+        close(check(shape).Volume(), 96)
+        check(func.fillet(shape, shape.edges("|Z"), 0.3))
+        close(check(func.cut(shape, func.cylinder(2, 4))).Volume(), 96 - 4 * math.pi)
+        return
+    if name == "operators":
+        a, b = cq.Vector(2, -3, 6), cq.Vector(-1, 4, 2)
+        assert (a + b).toTuple() == (1, 1, 8)
+        assert (2 * a - b).toTuple() == (5, -10, 10)
+        assert (-a).toTuple() == (-2, 3, -6)
+        box = cq.Workplane().box(4, 4, 4)
+        sphere = cq.Workplane().sphere(1)
+        close(check(box - sphere).Volume(), 64 - 4 * math.pi / 3)
+        close(check(box * sphere).Volume(), 4 * math.pi / 3)
+        check(box + sphere)
+        assert len(box.faces()[[0, -1]].vals()) == 2
+        assert len(list(box)) == 1
+        return
     if name.startswith("retry_"):
         if name == "retry_taper":
             w = cq.Workplane().rect(6, 6).rect(2, 2)

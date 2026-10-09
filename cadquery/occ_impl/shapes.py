@@ -4611,6 +4611,9 @@ class Solid(Shape, Mixin3D):
             angleDegrees=angleDegrees,
         )
 
+        if angleDegrees == 0:
+            return cls.extrudeLinear(outerWire, innerWires, vecNormal_)
+
         # make straight spine
         straight_spine_e = Edge.makeLine(vecCenter_, vecCenter_.add(vecNormal_))
         straight_spine_w = Wire.combine([straight_spine_e,])[0].wrapped

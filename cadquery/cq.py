@@ -2440,9 +2440,10 @@ class Workplane(object):
 
         return self.newObject(others + [w])
 
+    @_preservePending
     def each(
         self: T,
-        callback: Callable[[CQObject], Shape],
+        callback: Callable[[CQObject], Optional[Shape]],
         useLocalCoordinates: bool = False,
         combine: CombineMode = True,
         clean: bool = True,
@@ -2488,9 +2489,13 @@ class Workplane(object):
             if useLocalCoordinates:
                 # TODO: this needs to work for all types of objects, not just vectors!
                 r = callback(self.plane.toLocalCoords(obj))
-                r = r.transformShape(self.plane.rG)
+                if r is not None:
+                    r = r.transformShape(self.plane.rG)
             else:
                 r = callback(obj)
+
+            if r is None:
+                continue
 
             if isinstance(r, Wire):
                 if not r.forConstruction:
@@ -2499,15 +2504,17 @@ class Workplane(object):
 
         return self._combineWithBase(results, combine, clean)
 
+    @_preservePending
     def eachpoint(
         self: T,
-        arg: Union[Shape, "Workplane", Callable[[Location], Shape]],
+        arg: Union[Shape, "Workplane", Callable[[Location], Optional[Shape]]],
         useLocalCoordinates: bool = False,
         combine: CombineMode = False,
         clean: bool = True,
     ) -> T:
         """
         Same as each(), except arg is translated by the positions on the stack. If arg is a callback function, then the function is called for each point on the stack, and the resulting shape is used.
+        Callback results of None are omitted, as in each().
         :return: CadQuery object which contains a list of  vectors (points ) on its stack.
 
         :param useLocalCoordinates: should points be in local or global coordinates
@@ -2555,7 +2562,7 @@ class Workplane(object):
                 ]
             else:
                 res = [
-                    v.moved(p * loc)
+                    v.moved(loc * p)
                     for v in arg.vals()
                     for p in pnts
                     if isinstance(v, Shape)
@@ -2564,12 +2571,21 @@ class Workplane(object):
             if useLocalCoordinates:
                 res = [arg.moved(p).move(loc) for p in pnts]
             else:
-                res = [arg.moved(p * loc) for p in pnts]
+                res = [arg.moved(loc * p) for p in pnts]
         elif callable(arg):
+            res = []
             if useLocalCoordinates:
-                res = [arg(p).move(loc) for p in pnts]
+                for p in pnts:
+                    r = arg(p)
+                    if r is not None:
+                        # A callback may return a reused prototype. Moving it
+                        # in place also changes earlier results and the caller.
+                        res.append(r.moved(loc))
             else:
-                res = [arg(p * loc) for p in pnts]
+                for p in pnts:
+                    r = arg(loc * p)
+                    if r is not None:
+                        res.append(r)
         else:
             raise ValueError(f"{arg} is not supported")
 
@@ -2802,6 +2818,7 @@ class Workplane(object):
 
         return self.newObject(edges)
 
+    @_preservePending
     def close(self: T) -> T:
         """
         End construction, and attempt to build a closed wire.
@@ -3305,10 +3322,19 @@ class Workplane(object):
            or obj if one could not be found
         """
 
+        if mode not in (True, False, "cut", "a", "s"):
+            raise ValueError(f"Unsupported combine mode: {mode!r}")
+
         if mode:
             # since we are going to do something convert the iterable if needed
             if not isinstance(obj, Shape):
                 shapes = list(obj)
+                if not shapes:
+                    # No callback result means no feature to add/subtract.
+                    # Keep the context solid, or an empty stack if none exists.
+                    base = self._findType((Solid,), searchStack=True, searchParents=True)
+                    newS = self.newObject([base] if base is not None else [])
+                    return newS.clean() if clean else newS
                 obj = shapes[0] if len(shapes) == 1 else Compound.makeCompound(shapes)
 
             # dispatch on the mode
