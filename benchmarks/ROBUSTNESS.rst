@@ -39,7 +39,9 @@ and operators. Focused regressions additionally exercise failures after native
 feature creation,
 Boolean or cleaning failures, sweep path contexts, interrupts, subclasses,
 generator exceptions and every scalar parameter of selected native factories.
-Successful features must continue to consume profiles exactly once.
+Successful features must continue to consume profiles exactly once. Guarded
+operations run in their own frame, so tracers, profilers and Steve's feature
+history recorder see the operation's name and bound arguments.
 
 Current checkpoint
 ------------------
@@ -90,14 +92,37 @@ checks. Its nine-sample case ratios range from 0.962x to 1.096x, including 0.962
 for copying callback results to prevent mutation of shared prototypes. That
 stress score is not the full Steve performance gate.
 
-Next coverage expansion
------------------------
+Coverage expansion
+------------------
 
-Expand boundary scenarios to coordinates and axes, offsets, spline/Bezier inputs,
-copy ownership and serialization failures.
-These are review priorities, not claims that all listed behaviors are broken.
-Native ownership candidates need isolated lifetime checks and complete
-rebuilds of affected callers before an installed fix can be accepted.
+Six further isolated cases cover the previously listed review priorities:
+
+* ``plane_frames``: every named plane and its classmethod, orthonormal frames,
+  local/world round trips at large coordinates, explicit and turned x
+  directions, rotation, plane independence and invalid frames.
+* ``location_axes``: composition order, inverses, powers, plane locations,
+  points on an offset rotated workplane (``pushPoints`` and local
+  ``eachpoint``), affine matrices with non-uniform scale, an arbitrary revolve
+  axis and a zero rotation axis.
+* ``offsets``: arc, intersection and inward wire offsets, a collapsing offset,
+  circle and Workplane offsets, inward/outward/closed solid shells, a shell of a
+  located box and of a located sphere, face thickening and a NaN thickness.
+* ``splines``: interpolation through points, end tangents, periodic and
+  parameterized splines, approximation with and without smoothing, cubic
+  Bezier evaluation, Workplane and Sketch spline/Bezier solids and refused
+  degenerate, NaN and mismatched inputs.
+* ``copy_ownership``: shape copies and moves, Vector results that never alias
+  their inputs, tuple values, Location/Plane/Workplane/Sketch/Assembly copies
+  and pickling of shapes, vectors, locations, planes and matrices.
+* ``serialization_failures``: exports into a missing directory, unknown export
+  types, empty/garbage/truncated STEP, BREP, binary and pickle inputs, in-memory
+  BREP/binary round trips, assembly STEP export and an empty compound.
+
+All six pass on this fork with OCP 8.0.1.1, with and without the companion
+OCCT toolkits. Upstream ``9a6a705`` fails two of them: ``Vector.transform``
+raises for a non-orthogonal matrix, and ``hollow`` of a located sphere raises
+``StdFail_NotDone``. ``Workplane(plane)`` keeps the caller's ``Plane`` object
+(upstream behavior); every derived workplane holds its own copy.
 
 ``Standard_Handle`` assignment from an owned child can destroy the new object
 too early; move assignment can leave an ownership cycle. A source correction and
@@ -106,5 +131,9 @@ checks also passing under ``OCCT_HANDLE_NOCAST``. These are source-only checks
 on the separate ``steve/handle-lifetime-reliability`` OCCT branch. The correction
 is committed as ``6003228c5`` and is not included in the installed image above.
 This header is instantiated in callers; replacing one toolkit cannot establish
-that all native libraries and Python bindings use it. Its full runtime rebuild,
-geometry/export validation and speed comparison remain outstanding.
+that all native libraries and Python bindings use it. A Steve runtime image
+with only the six fork toolkits replaced (OCP 8.0.1.1 not rebuilt) matches the
+same image without them on all 286 Steve geometry/export parity builds and
+every Steve suite, and its build times are unchanged (1.423x versus 1.420x over
+the original Steve runtime). The OCP rebuild needed to bring this header into
+the bindings remains outstanding.
