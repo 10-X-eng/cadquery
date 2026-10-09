@@ -2,6 +2,7 @@
 
 import inspect
 import math
+import sys
 
 import cadquery as cq
 import pytest
@@ -184,6 +185,74 @@ def test_decorated_api_keeps_signatures_and_workplane_subclasses():
     with pytest.raises(Standard_ConstructionError):
         wp.extrude(0)
     assert isinstance(wp.extrude(4), CustomWorkplane)
+
+
+def _top_rect():
+    return cq.Workplane().box(4, 4, 4).faces(">Z").workplane().rect(1, 1)
+
+
+@pytest.mark.parametrize(
+    "name, operation",
+    [
+        ("wire", lambda: cq.Workplane().moveTo(1, 0).lineTo(2, 0).lineTo(2, 1).wire()),
+        ("each", lambda: cq.Workplane().rect(2, 2).vertices().each(lambda v: None)),
+        (
+            "eachpoint",
+            lambda: cq.Workplane().rect(2, 2).vertices().eachpoint(lambda l: None),
+        ),
+        ("close", lambda: cq.Workplane().lineTo(1, 0).lineTo(1, 1).close()),
+        ("twistExtrude", lambda: cq.Workplane().rect(2, 2).twistExtrude(3, 10)),
+        ("extrude", lambda: cq.Workplane().rect(2, 2).extrude(3)),
+        (
+            "revolve",
+            lambda: cq.Workplane().moveTo(3, 0).rect(1, 1).revolve(90, (0, 0), (0, 1)),
+        ),
+        (
+            "sweep",
+            lambda: cq.Workplane().circle(1).sweep(cq.Workplane("XZ").lineTo(0, 5)),
+        ),
+        ("cutBlind", lambda: _top_rect().cutBlind(-1)),
+        ("cutThruAll", lambda: _top_rect().cutThruAll()),
+        (
+            "loft",
+            lambda: cq.Workplane().rect(2, 2).workplane(offset=2).circle(1).loft(),
+        ),
+    ],
+)
+def test_guarded_operations_run_in_their_own_frame(name, operation):
+    # Tracers, profilers and history recorders identify an operation by the
+    # frame its call site enters: its code, name and bound arguments. A
+    # wrapper frame in between hides all three.
+    call_site = operation.__code__
+    frame = None
+
+    def profile(f, event, arg):
+        nonlocal frame
+        if (
+            event == "call"
+            and frame is None
+            and f.f_back is not None
+            and f.f_back.f_code is call_site
+            and f.f_globals.get("__name__") == "cadquery.cq"
+            and f.f_code.co_name in (name, "wrapped")
+        ):
+            frame = f
+
+    previous = sys.getprofile()
+    sys.setprofile(profile)
+    try:
+        operation()
+    finally:
+        sys.setprofile(previous)
+    assert frame is not None, f"{name} was not entered from its call site"
+    code = frame.f_code
+    assert code.co_name == name
+    # The entered frame binds the documented parameters by name.
+    bound = code.co_varnames[: code.co_argcount + code.co_kwonlyargcount]
+    assert list(bound) == list(
+        inspect.signature(getattr(cq.Workplane, name)).parameters
+    )
+    assert frame.f_locals["self"].__class__ is cq.Workplane
 
 
 @pytest.mark.parametrize("container", [tuple, iter, lambda xs: (x for x in xs)])

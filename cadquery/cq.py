@@ -2,7 +2,6 @@
 # Distributed under the terms of the Apache 2 License.
 
 import math
-from functools import wraps
 from copy import copy
 from itertools import chain
 from typing import (
@@ -73,19 +72,25 @@ def _selectShapes(objects: Iterable[Any]) -> List[Shape]:
     return [el for el in objects if isinstance(el, Shape)]
 
 
-def _preservePending(method):
+class _PendingGuard:
     """Keep profiles available for retry when a consuming operation fails.
 
     Pending geometry belongs to the shared context, so losing it also breaks
     other workplanes in the same chain. Save references and list contents, not
     copies of the native geometry. Include input workplanes (a sweep's path or
     auxiliary spine) and take one snapshot per distinct context.
+
+    Used as a ``with`` block inside each operation rather than as a decorator:
+    a wrapper would replace the operation's own frame (name and arguments) as
+    the one called from user code, which frame-based tools such as tracers,
+    profilers and history recorders use to identify the operation.
     """
 
-    @wraps(method)
-    def wrapped(self, *args, **kwargs):
+    __slots__ = ("_contexts",)
+
+    def __init__(self, *objects: Any):
         contexts = {}
-        for obj in (self, *args, *kwargs.values()):
+        for obj in objects:
             if isinstance(obj, Workplane) and id(obj.ctx) not in contexts:
                 ctx = obj.ctx
                 contexts[id(ctx)] = (
@@ -96,9 +101,13 @@ def _preservePending(method):
                     ctx.pendingEdges[:],
                     ctx.firstPoint,
                 )
-        try:
-            return method(self, *args, **kwargs)
-        except BaseException:
+        self._contexts = contexts
+
+    def __enter__(self) -> "_PendingGuard":
+        return self
+
+    def __exit__(self, kind, value, traceback) -> bool:
+        if kind is not None:
             for (
                 ctx,
                 wires,
@@ -106,15 +115,13 @@ def _preservePending(method):
                 edges,
                 savedEdges,
                 firstPoint,
-            ) in contexts.values():
+            ) in self._contexts.values():
                 wires[:] = savedWires
                 edges[:] = savedEdges
                 ctx.pendingWires = wires
                 ctx.pendingEdges = edges
                 ctx.firstPoint = firstPoint
-            raise
-
-    return wrapped
+        return False
 
 
 class CQContext(object):
@@ -2405,7 +2412,6 @@ class Workplane(object):
 
         return r
 
-    @_preservePending
     def wire(self: T, forConstruction: bool = False) -> T:
         """
         Returns a CQ object with all pending edges connected into a wire.
@@ -2427,20 +2433,20 @@ class Workplane(object):
         Any non edges will still remain.
         """
 
-        # do not consolidate if there are no free edges
-        if len(self.ctx.pendingEdges) == 0:
-            return self
+        with _PendingGuard(self):
+            # do not consolidate if there are no free edges
+            if len(self.ctx.pendingEdges) == 0:
+                return self
 
-        edges = self.ctx.popPendingEdges()
-        w = Wire.assembleEdges(edges)
-        if not forConstruction:
-            self._addPendingWire(w)
+            edges = self.ctx.popPendingEdges()
+            w = Wire.assembleEdges(edges)
+            if not forConstruction:
+                self._addPendingWire(w)
 
-        others = [e for e in self.objects if not isinstance(e, Edge)]
+            others = [e for e in self.objects if not isinstance(e, Edge)]
 
-        return self.newObject(others + [w])
+            return self.newObject(others + [w])
 
-    @_preservePending
     def each(
         self: T,
         callback: Callable[[CQObject], Optional[Shape]],
@@ -2483,28 +2489,28 @@ class Workplane(object):
 
         TODO: wrapper object for Wire will clean up forConstruction flag everywhere
         """
-        results = []
-        for obj in self.objects:
+        with _PendingGuard(self):
+            results = []
+            for obj in self.objects:
 
-            if useLocalCoordinates:
-                # TODO: this needs to work for all types of objects, not just vectors!
-                r = callback(self.plane.toLocalCoords(obj))
-                if r is not None:
-                    r = r.transformShape(self.plane.rG)
-            else:
-                r = callback(obj)
+                if useLocalCoordinates:
+                    # TODO: this needs to work for all types of objects, not just vectors!
+                    r = callback(self.plane.toLocalCoords(obj))
+                    if r is not None:
+                        r = r.transformShape(self.plane.rG)
+                else:
+                    r = callback(obj)
 
-            if r is None:
-                continue
+                if r is None:
+                    continue
 
-            if isinstance(r, Wire):
-                if not r.forConstruction:
-                    self._addPendingWire(r)
-            results.append(r)
+                if isinstance(r, Wire):
+                    if not r.forConstruction:
+                        self._addPendingWire(r)
+                results.append(r)
 
-        return self._combineWithBase(results, combine, clean)
+            return self._combineWithBase(results, combine, clean)
 
-    @_preservePending
     def eachpoint(
         self: T,
         arg: Union[Shape, "Workplane", Callable[[Location], Optional[Shape]]],
@@ -2532,68 +2538,69 @@ class Workplane(object):
         workplane/coordinate system
         """
 
-        # convert stack to a list of points
-        pnts = []
-        plane = self.plane
-        loc = self.plane.location
+        with _PendingGuard(self, arg):
+            # convert stack to a list of points
+            pnts = []
+            plane = self.plane
+            loc = self.plane.location
 
-        if len(self.objects) == 0:
-            # nothing on the stack. here, we'll assume we should operate with the
-            # origin as the context point
-            pnts.append(Location())
-        else:
-            for o in self.objects:
-                if isinstance(o, (Vector, Shape)):
-                    # Both locations have the plane's rotation, so their
-                    # relative transform is a translation in plane coordinates.
-                    pnts.append(Location(plane.toLocalCoords(o.Center())))
-                elif isinstance(o, Sketch):
-                    pnts.append(Location(plane.toLocalCoords(o._faces.Center())))
+            if len(self.objects) == 0:
+                # nothing on the stack. here, we'll assume we should operate with the
+                # origin as the context point
+                pnts.append(Location())
+            else:
+                for o in self.objects:
+                    if isinstance(o, (Vector, Shape)):
+                        # Both locations have the plane's rotation, so their
+                        # relative transform is a translation in plane coordinates.
+                        pnts.append(Location(plane.toLocalCoords(o.Center())))
+                    elif isinstance(o, Sketch):
+                        pnts.append(Location(plane.toLocalCoords(o._faces.Center())))
+                    else:
+                        pnts.append(o)
+
+            if isinstance(arg, Workplane):
+                if useLocalCoordinates:
+                    res = [
+                        v.moved(p).move(loc)
+                        for v in arg.vals()
+                        for p in pnts
+                        if isinstance(v, Shape)
+                    ]
                 else:
-                    pnts.append(o)
-
-        if isinstance(arg, Workplane):
-            if useLocalCoordinates:
-                res = [
-                    v.moved(p).move(loc)
-                    for v in arg.vals()
-                    for p in pnts
-                    if isinstance(v, Shape)
-                ]
+                    res = [
+                        v.moved(loc * p)
+                        for v in arg.vals()
+                        for p in pnts
+                        if isinstance(v, Shape)
+                    ]
+            elif isinstance(arg, Shape):
+                if useLocalCoordinates:
+                    res = [arg.moved(p).move(loc) for p in pnts]
+                else:
+                    res = [arg.moved(loc * p) for p in pnts]
+            elif callable(arg):
+                res = []
+                if useLocalCoordinates:
+                    for p in pnts:
+                        r = arg(p)
+                        if r is not None:
+                            # A callback may return a reused prototype. Moving it
+                            # in place also changes earlier results and the caller.
+                            res.append(r.moved(loc))
+                else:
+                    for p in pnts:
+                        r = arg(loc * p)
+                        if r is not None:
+                            res.append(r)
             else:
-                res = [
-                    v.moved(loc * p)
-                    for v in arg.vals()
-                    for p in pnts
-                    if isinstance(v, Shape)
-                ]
-        elif isinstance(arg, Shape):
-            if useLocalCoordinates:
-                res = [arg.moved(p).move(loc) for p in pnts]
-            else:
-                res = [arg.moved(loc * p) for p in pnts]
-        elif callable(arg):
-            res = []
-            if useLocalCoordinates:
-                for p in pnts:
-                    r = arg(p)
-                    if r is not None:
-                        # A callback may return a reused prototype. Moving it
-                        # in place also changes earlier results and the caller.
-                        res.append(r.moved(loc))
-            else:
-                for p in pnts:
-                    r = arg(loc * p)
-                    if r is not None:
-                        res.append(r)
-        else:
-            raise ValueError(f"{arg} is not supported")
+                raise ValueError(f"{arg} is not supported")
 
-        for r in res:
-            if isinstance(r, Wire) and not r.forConstruction:
-                self._addPendingWire(r)
+            for r in res:
+                if isinstance(r, Wire) and not r.forConstruction:
+                    self._addPendingWire(r)
 
-        return self._combineWithBase(res, combine, clean)
+            return self._combineWithBase(res, combine, clean)
 
     def rect(
         self: T,
@@ -2818,7 +2825,6 @@ class Workplane(object):
 
         return self.newObject(edges)
 
-    @_preservePending
     def close(self: T) -> T:
         """
         End construction, and attempt to build a closed wire.
@@ -2835,23 +2841,24 @@ class Workplane(object):
 
             s = Workplane().lineTo(1, 0).lineTo(1, 1).close().extrude(0.2)
         """
-        endPoint = self._findFromPoint(True)
+        with _PendingGuard(self):
+            endPoint = self._findFromPoint(True)
 
-        if self.ctx.firstPoint is None:
-            raise ValueError("No start point specified - cannot close")
-        else:
-            startPoint = self.ctx.firstPoint
+            if self.ctx.firstPoint is None:
+                raise ValueError("No start point specified - cannot close")
+            else:
+                startPoint = self.ctx.firstPoint
 
-        # Check if there is a distance between startPoint and endPoint
-        # that is larger than what is considered a numerical error.
-        # If so; add a line segment between endPoint and startPoint
-        if endPoint.sub(startPoint).Length > 1e-6:
-            self.polyline([endPoint, startPoint])
+            # Check if there is a distance between startPoint and endPoint
+            # that is larger than what is considered a numerical error.
+            # If so; add a line segment between endPoint and startPoint
+            if endPoint.sub(startPoint).Length > 1e-6:
+                self.polyline([endPoint, startPoint])
 
-        # Need to reset the first point after closing a wire
-        self.ctx.firstPoint = None
+            # Need to reset the first point after closing a wire
+            self.ctx.firstPoint = None
 
-        return self.wire()
+            return self.wire()
 
     def largestDimension(self) -> float:
         """
@@ -3071,7 +3078,6 @@ class Workplane(object):
         return self.cutEach(lambda loc: h.moved(loc), True, clean)
 
     # TODO: duplicated code with _extrude and extrude
-    @_preservePending
     def twistExtrude(
         self: T,
         distance: float,
@@ -3099,31 +3105,31 @@ class Workplane(object):
         :param clean: call :meth:`clean` afterwards to have a clean shape
         :return: a CQ object with the resulting solid selected.
         """
-        _checkFinite(distance=distance, angleDegrees=angleDegrees)
-        faces = self._getFaces()
+        with _PendingGuard(self):
+            _checkFinite(distance=distance, angleDegrees=angleDegrees)
+            faces = self._getFaces()
 
-        # compute extrusion vector and extrude
-        eDir = self.plane.zDir.multiply(distance)
+            # compute extrusion vector and extrude
+            eDir = self.plane.zDir.multiply(distance)
 
-        # one would think that fusing faces into a compound and then extruding would work,
-        # but it doesn't-- the resulting compound appears to look right, ( right number of faces, etc)
-        # but then cutting it from the main solid fails with BRep_NotDone.
-        # the work around is to extrude each and then join the resulting solids, which seems to work
+            # one would think that fusing faces into a compound and then extruding would work,
+            # but it doesn't-- the resulting compound appears to look right, ( right number of faces, etc)
+            # but then cutting it from the main solid fails with BRep_NotDone.
+            # the work around is to extrude each and then join the resulting solids, which seems to work
 
-        # underlying cad kernel can only handle simple bosses-- we'll aggregate them if there
-        # are multiple sets
-        shapes: List[Shape] = []
-        for f in faces:
-            thisObj = Solid.extrudeLinearWithRotation(
-                f, self.plane.origin, eDir, angleDegrees
-            )
-            shapes.append(thisObj)
+            # underlying cad kernel can only handle simple bosses-- we'll aggregate them if there
+            # are multiple sets
+            shapes: List[Shape] = []
+            for f in faces:
+                thisObj = Solid.extrudeLinearWithRotation(
+                    f, self.plane.origin, eDir, angleDegrees
+                )
+                shapes.append(thisObj)
 
-        r = Compound.makeCompound(shapes).fuse()
+            r = Compound.makeCompound(shapes).fuse()
 
-        return self._combineWithBase(r, combine, clean)
+            return self._combineWithBase(r, combine, clean)
 
-    @_preservePending
     def extrude(
         self: T,
         until: Union[float, Literal["next", "last"], Face],
@@ -3157,38 +3163,40 @@ class Workplane(object):
             and the resulting solid becomes the new context solid.
         """
 
-        # If subtractive mode is requested, use cutBlind
-        if combine in ("cut", "s"):
-            return self.cutBlind(until, clean, both, taper)
+        with _PendingGuard(self):
+            # If subtractive mode is requested, use cutBlind
+            if combine in ("cut", "s"):
+                return self.cutBlind(until, clean, both, taper)
 
-        # Handle `until` multiple values
-        elif until in ("next", "last") and combine in (True, "a"):
-            if until == "next":
-                faceIndex = 0
-            elif until == "last":
-                faceIndex = -1
+            # Handle `until` multiple values
+            elif until in ("next", "last") and combine in (True, "a"):
+                if until == "next":
+                    faceIndex = 0
+                elif until == "last":
+                    faceIndex = -1
 
-            r = self._extrude(None, both=both, taper=taper, upToFace=faceIndex)
+                r = self._extrude(None, both=both, taper=taper, upToFace=faceIndex)
 
-        elif isinstance(until, Face) and combine:
-            r = self._extrude(None, both=both, taper=taper, upToFace=until)
+            elif isinstance(until, Face) and combine:
+                r = self._extrude(None, both=both, taper=taper, upToFace=until)
 
-        elif isinstance(until, (int, float)):
-            r = self._extrude(until, both=both, taper=taper, upToFace=None, clean=clean)
+            elif isinstance(until, (int, float)):
+                r = self._extrude(
+                    until, both=both, taper=taper, upToFace=None, clean=clean
+                )
 
-        elif isinstance(until, (str, Face)) and combine is False:
-            raise ValueError(
-                "`combine` can't be set to False when extruding until a face"
-            )
+            elif isinstance(until, (str, Face)) and combine is False:
+                raise ValueError(
+                    "`combine` can't be set to False when extruding until a face"
+                )
 
-        else:
-            raise ValueError(
-                f"Do not know how to handle until argument of type {type(until)}"
-            )
+            else:
+                raise ValueError(
+                    f"Do not know how to handle until argument of type {type(until)}"
+                )
 
-        return self._combineWithBase(r, combine, clean)
+            return self._combineWithBase(r, combine, clean)
 
-    @_preservePending
     def revolve(
         self: T,
         angleDegrees: float = 360.0,
@@ -3223,38 +3231,38 @@ class Workplane(object):
             the current Workplane position or specify `axisStart` and `axisEnd` with the correct vector position.
             In this example (0,0,0), (0,1,0) as axis coords would fail.
         """
-        _checkFinite(angleDegrees=angleDegrees)
-        # Make sure we account for users specifying angles larger than 360 degrees
-        angleDegrees %= 360.0
+        with _PendingGuard(self):
+            _checkFinite(angleDegrees=angleDegrees)
+            # Make sure we account for users specifying angles larger than 360 degrees
+            angleDegrees %= 360.0
 
-        # Compensate for OCCT not assuming that a 0 degree revolve means a 360 degree revolve
-        angleDegrees = 360.0 if angleDegrees == 0 else angleDegrees
+            # Compensate for OCCT not assuming that a 0 degree revolve means a 360 degree revolve
+            angleDegrees = 360.0 if angleDegrees == 0 else angleDegrees
 
-        # The default start point of the vector defining the axis of rotation will be the origin
-        # of the workplane
-        if axisStart is None:
-            axisStart = self.plane.toWorldCoords((0, 0)).toTuple()
-        else:
-            axisStart = self.plane.toWorldCoords(axisStart).toTuple()
-
-        # The default end point of the vector defining the axis of rotation should be along the
-        # normal from the plane
-        if axisEnd is None:
-            # Make sure we match the user's assumed axis of rotation if they specified an start
-            # but not an end
-            if axisStart[1] != 0:
-                axisEnd = self.plane.toWorldCoords((0, axisStart[1])).toTuple()
+            # The default start point of the vector defining the axis of rotation will be the origin
+            # of the workplane
+            if axisStart is None:
+                axisStart = self.plane.toWorldCoords((0, 0)).toTuple()
             else:
-                axisEnd = self.plane.toWorldCoords((0, 1)).toTuple()
-        else:
-            axisEnd = self.plane.toWorldCoords(axisEnd).toTuple()
+                axisStart = self.plane.toWorldCoords(axisStart).toTuple()
 
-        # returns a Solid (or a compound if there were multiple)
-        r = self._revolve(angleDegrees, axisStart, axisEnd)
+            # The default end point of the vector defining the axis of rotation should be along the
+            # normal from the plane
+            if axisEnd is None:
+                # Make sure we match the user's assumed axis of rotation if they specified an start
+                # but not an end
+                if axisStart[1] != 0:
+                    axisEnd = self.plane.toWorldCoords((0, axisStart[1])).toTuple()
+                else:
+                    axisEnd = self.plane.toWorldCoords((0, 1)).toTuple()
+            else:
+                axisEnd = self.plane.toWorldCoords(axisEnd).toTuple()
 
-        return self._combineWithBase(r, combine, clean)
+            # returns a Solid (or a compound if there were multiple)
+            r = self._revolve(angleDegrees, axisStart, axisEnd)
 
-    @_preservePending
+            return self._combineWithBase(r, combine, clean)
+
     def sweep(
         self: T,
         path: Union["Workplane", Wire, Edge],
@@ -3284,28 +3292,29 @@ class Workplane(object):
         :return: a CQ object with the resulting solid selected.
         """
 
-        if not sweepAlongWires is None:
-            multisection = sweepAlongWires
+        with _PendingGuard(self, path, auxSpine):
+            if not sweepAlongWires is None:
+                multisection = sweepAlongWires
 
-            from warnings import warn
+                from warnings import warn
 
-            warn(
-                "sweepAlongWires keyword argument is deprecated and will "
-                "be removed in the next version; use multisection instead",
-                DeprecationWarning,
-            )
+                warn(
+                    "sweepAlongWires keyword argument is deprecated and will "
+                    "be removed in the next version; use multisection instead",
+                    DeprecationWarning,
+                )
 
-        r = self._sweep(
-            path.wire() if isinstance(path, Workplane) else path,
-            multisection,
-            makeSolid,
-            isFrenet,
-            transition,
-            normal,
-            auxSpine,
-        )  # returns a Solid (or a compound if there were multiple)
+            r = self._sweep(
+                path.wire() if isinstance(path, Workplane) else path,
+                multisection,
+                makeSolid,
+                isFrenet,
+                transition,
+                normal,
+                auxSpine,
+            )  # returns a Solid (or a compound if there were multiple)
 
-        return self._combineWithBase(r, combine, clean)
+            return self._combineWithBase(r, combine, clean)
 
     def _combineWithBase(
         self: T,
@@ -3620,7 +3629,6 @@ class Workplane(object):
 
         return self.split(other)
 
-    @_preservePending
     def cutBlind(
         self: T,
         until: Union[float, Literal["next", "last"], Face],
@@ -3649,57 +3657,62 @@ class Workplane(object):
 
         see :meth:`cutThruAll` to cut material from the entire part
         """
-        # Handling of `until` passed values
-        s: Union[Compound, Solid, Shape]
-        if isinstance(both, float) and taper == None:
-            # Because inserting a new parameter "both" in front of "taper",
-            # existing code calling this function with position arguments will
-            # pass the taper argument (float) to the "both" argument. This
-            # warning is to catch that.
-            from warnings import warn
+        with _PendingGuard(self):
+            # Handling of `until` passed values
+            s: Union[Compound, Solid, Shape]
+            if isinstance(both, float) and taper == None:
+                # Because inserting a new parameter "both" in front of "taper",
+                # existing code calling this function with position arguments will
+                # pass the taper argument (float) to the "both" argument. This
+                # warning is to catch that.
+                from warnings import warn
 
-            warn(
-                "cutBlind added a new keyword argument `both=True`. "
-                "The signature is changed from "
-                "(until, clean, taper) -> (until, clean, both, taper)",
-                DeprecationWarning,
-            )
+                warn(
+                    "cutBlind added a new keyword argument `both=True`. "
+                    "The signature is changed from "
+                    "(until, clean, taper) -> (until, clean, both, taper)",
+                    DeprecationWarning,
+                )
 
-            # assign 3rd argument value to taper
-            taper = both
-            both = False
+                # assign 3rd argument value to taper
+                taper = both
+                both = False
 
-        if isinstance(until, str) and until in ("next", "last"):
-            if until == "next":
-                faceIndex = 0
-            elif until == "last":
-                faceIndex = -1
+            if isinstance(until, str) and until in ("next", "last"):
+                if until == "next":
+                    faceIndex = 0
+                elif until == "last":
+                    faceIndex = -1
 
-            s = self._extrude(
-                None, both=both, taper=taper, upToFace=faceIndex, additive=False
-            )
+                s = self._extrude(
+                    None, both=both, taper=taper, upToFace=faceIndex, additive=False
+                )
 
-        elif isinstance(until, Face):
-            s = self._extrude(
-                None, both=both, taper=taper, upToFace=until, additive=False
-            )
+            elif isinstance(until, Face):
+                s = self._extrude(
+                    None, both=both, taper=taper, upToFace=until, additive=False
+                )
 
-        elif isinstance(until, (int, float)):
-            toCut = self._extrude(
-                until, both=both, taper=taper, upToFace=None, additive=False, clean=clean
-            )
-            solidRef = self.findSolid()
-            s = solidRef.cut(toCut)
-        else:
-            raise ValueError(
-                f"Do not know how to handle until argument of type {type(until)}"
-            )
-        if clean:
-            s = s.clean()
+            elif isinstance(until, (int, float)):
+                toCut = self._extrude(
+                    until,
+                    both=both,
+                    taper=taper,
+                    upToFace=None,
+                    additive=False,
+                    clean=clean,
+                )
+                solidRef = self.findSolid()
+                s = solidRef.cut(toCut)
+            else:
+                raise ValueError(
+                    f"Do not know how to handle until argument of type {type(until)}"
+                )
+            if clean:
+                s = s.clean()
 
-        return self.newObject([s])
+            return self.newObject([s])
 
-    @_preservePending
     def cutThruAll(self: T, clean: bool = True, taper: float = 0) -> T:
         """
         Use all un-extruded wires in the parent chain to create a prismatic cut from existing solid.
@@ -3715,18 +3728,18 @@ class Workplane(object):
 
         see :meth:`cutBlind` to cut material to a limited depth
         """
-        solidRef = self.findSolid()
+        with _PendingGuard(self):
+            solidRef = self.findSolid()
 
-        s = solidRef.dprism(
-            None, self._getFaces(), thruAll=True, additive=False, taper=-taper
-        )
+            s = solidRef.dprism(
+                None, self._getFaces(), thruAll=True, additive=False, taper=-taper
+            )
 
-        if clean:
-            s = s.clean()
+            if clean:
+                s = s.clean()
 
-        return self.newObject([s])
+            return self.newObject([s])
 
-    @_preservePending
     def loft(
         self: T, ruled: bool = False, combine: CombineMode = True, clean: bool = True
     ) -> T:
@@ -3743,26 +3756,27 @@ class Workplane(object):
 
         """
 
-        toLoft: List[Union[Wire, Vertex]] = []
+        with _PendingGuard(self):
+            toLoft: List[Union[Wire, Vertex]] = []
 
-        if self.ctx.pendingWires:
-            toLoft.extend(self.ctx.popPendingWires())
-        else:
-            toLoft = [
-                el if isinstance(el, Vertex) else el.outerWire()
-                for el in self._getFacesVertices()
-            ]
+            if self.ctx.pendingWires:
+                toLoft.extend(self.ctx.popPendingWires())
+            else:
+                toLoft = [
+                    el if isinstance(el, Vertex) else el.outerWire()
+                    for el in self._getFacesVertices()
+                ]
 
-        if not toLoft:
-            raise ValueError("Nothing to loft")
-        elif len(toLoft) == 1:
-            raise ValueError("More than one wire or face is required")
+            if not toLoft:
+                raise ValueError("Nothing to loft")
+            elif len(toLoft) == 1:
+                raise ValueError("More than one wire or face is required")
 
-        r: Shape = loft(toLoft, cap=True, ruled=ruled)
+            r: Shape = loft(toLoft, cap=True, ruled=ruled)
 
-        newS = self._combineWithBase(r, combine, clean)
+            newS = self._combineWithBase(r, combine, clean)
 
-        return newS
+            return newS
 
     def _getFaces(self) -> List[Face]:
         """
