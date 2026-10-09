@@ -45,6 +45,7 @@ Table Of Contents
     selectors.rst
     classreference.rst
     importexport.rst
+    occ_compat.rst
     cqgi.rst
     extending.rst
     citing.rst
