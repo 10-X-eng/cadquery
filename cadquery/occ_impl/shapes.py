@@ -516,6 +516,136 @@ def _shape_list_values(shapes: TopTools_ListOfShape) -> Iterable[TopoDS_Shape]:
     return result
 
 
+def _sound_face(face: TopoDS_Shape) -> bool:
+    """
+    Valid, and bounding a positive area (a face whose boundary runs the wrong
+    way round has a negative one).
+    """
+
+    if not BRepCheck_Analyzer(face).IsValid():
+        return False
+    props = GProp_GProps()
+    BRepGProp.SurfaceProperties_s(face, props)
+
+    return props.Mass() > 0
+
+
+def _unify_same_domain(obj: TopoDS_Shape, keep_sphere_edges: bool) -> TopoDS_Shape:
+    """
+    Merge same-domain faces and edges, never breaking a face that was sound.
+
+    The merge rewrites the edges and faces it works on in place, and a
+    boolean's result shares them with its inputs: merging obj itself could
+    break it and the shapes it was made from. It merges a copy of the topology
+    instead (surfaces and curves stay shared).
+
+    The merge can also rebuild a face wrongly: the wire repair it runs on each
+    face it changed (ShapeFix_Wire::FixShifted, with the face orientation fix
+    off) can swap the two pcurves of a seam on a surface closed in both
+    directions, turning the face inside out (a torus with holes). A rebuilt
+    face that is invalid, where the faces it was made from were sound, is
+    merged again with those faces' edges kept, until none is broken.
+    """
+
+    faces = TopTools_IndexedMapOfShape()
+    edges = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(obj, ta.TopAbs_FACE, faces)
+    TopExp.MapShapes_s(obj, ta.TopAbs_EDGE, edges)
+    sound: dict[int, bool] = {}  # by index in faces, checked on obj's own faces
+    kept: set[int] = set()  # indices in edges of the edges to keep
+
+    while True:
+        copier = BRepBuilderAPI_Copy(obj, False)
+        copied_faces = [
+            TopoDS.Face(copier.Modified(faces.FindKey(i)).First())
+            for i in range(1, faces.Extent() + 1)
+        ]
+        copied_edges = TopTools_IndexedMapOfShape()  # same indices as edges
+        for i in range(1, edges.Extent() + 1):
+            copied_edges.Add(copier.Modified(edges.FindKey(i)).First())
+
+        upgrader = ShapeUpgrade_UnifySameDomain(copier.Shape(), True, True, True)
+        upgrader.AllowInternalEdges(False)
+        for i in kept:
+            upgrader.KeepShape(copied_edges.FindKey(i))
+        # OCCT can discard spherical trimming wires when merging same-domain
+        # faces (upstream #2020). Protect these boundaries; other surfaces and
+        # edges can still unify.
+        if keep_sphere_edges:
+            for face in copied_faces:
+                if BRepAdaptor_Surface(face, False).GetType() == ga.GeomAbs_Sphere:
+                    for edge in _topods_edges(face):
+                        upgrader.KeepShape(edge)
+        upgrader.Build()
+
+        history = upgrader.History()
+        broken: set[int] = set()
+        for i, face in enumerate(copied_faces, 1):
+            rebuilt = list(_shape_list_values(history.Modified(face)))
+            if not rebuilt or all(_sound_face(f) for f in rebuilt):
+                continue
+            if i not in sound:
+                sound[i] = _sound_face(faces.FindKey(i))
+            if sound[i]:
+                broken.update(
+                    edges.FindIndex(e) for e in _topods_edges(faces.FindKey(i))
+                )
+        if not broken:
+            return _with_originals(obj, copier, history, upgrader.Shape())
+        if broken <= kept:
+            return obj  # Broken with its edges kept: leave the faces unmerged.
+        kept |= broken
+
+
+def _with_originals(
+    obj: TopoDS_Shape,
+    copier: BRepBuilderAPI_Copy,
+    history: BRepTools_History,
+    merged: TopoDS_Shape,
+) -> TopoDS_Shape:
+    """
+    merged (a merge of copier's copy of obj) with obj's own vertices, edges and
+    faces wherever the merge left them alone: callers find those by identity
+    (cutBlind up to a face taken before a union). Unless a face rebuilt around
+    them is then not sound: merged as it is.
+    """
+
+    present = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(merged, present)
+    reshape = BRepTools_ReShape()
+    for kind in (ta.TopAbs_FACE, ta.TopAbs_EDGE, ta.TopAbs_VERTEX):
+        originals = TopTools_IndexedMapOfShape()
+        TopExp.MapShapes_s(obj, kind, originals)
+        for i in range(1, originals.Extent() + 1):
+            original = originals.FindKey(i)
+            # Modified() gives the copy forward: orient it as the original.
+            copy = copier.Modified(original).First().Oriented(original.Orientation())
+            if (
+                present.Contains(copy)
+                and not history.IsRemoved(copy)
+                and history.Modified(copy).IsEmpty()
+            ):
+                reshape.Replace(copy, original)
+    restored = reshape.Apply(merged)
+
+    own = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(obj, ta.TopAbs_FACE, own)
+    faces = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(restored, ta.TopAbs_FACE, faces)
+    for i in range(1, faces.Extent() + 1):
+        if not own.Contains(faces.FindKey(i)) and not _sound_face(faces.FindKey(i)):
+            return merged
+
+    return restored
+
+
+def _topods_edges(obj: TopoDS_Shape) -> list[TopoDS_Shape]:
+    edges = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(obj, ta.TopAbs_EDGE, edges)
+
+    return [edges.FindKey(i) for i in range(1, edges.Extent() + 1)]
+
+
 def fix(obj: TopoDS_Shape) -> TopoDS_Shape:
     """
     Fix a TopoDS object to suitable specialized type
@@ -545,23 +675,13 @@ class Shape(object):
     def clean(self: T) -> T:
         """Experimental clean using ShapeUpgrade"""
 
-        upgrader = ShapeUpgrade_UnifySameDomain(self.wrapped, True, True, True)
-        upgrader.AllowInternalEdges(False)
-        # OCCT can discard spherical trimming wires when merging same-domain
-        # faces (upstream #2020), corrupting both the result and shared input
-        # topology. Protect these boundaries before running the operation.
-        # Other surfaces and edges can still unify. Unchanged face identities
-        # are retained for subsequent operations such as extrude-until-face.
-        if self.wrapped.ShapeType() not in (
-            ta.TopAbs_WIRE, ta.TopAbs_EDGE, ta.TopAbs_VERTEX
-        ):
-            for face in self.Faces():
-                if BRepAdaptor_Surface(face.wrapped, False).GetType() == ga.GeomAbs_Sphere:
-                    for edge in face.Edges():
-                        upgrader.KeepShape(edge.wrapped)
-        upgrader.Build()
-
-        return self.__class__(upgrader.Shape())
+        return self.__class__(
+            _unify_same_domain(
+                self.wrapped,
+                self.wrapped.ShapeType()
+                not in (ta.TopAbs_WIRE, ta.TopAbs_EDGE, ta.TopAbs_VERTEX),
+            )
+        )
 
     def fix(self: T) -> T:
         """Try to fix shape if not valid"""
@@ -7360,11 +7480,7 @@ def clean(s: Shape) -> Shape:
     Clean superfluous edges and faces.
     """
 
-    builder = ShapeUpgrade_UnifySameDomain(s.wrapped, True, True, True)
-    builder.AllowInternalEdges(False)
-    builder.Build()
-
-    return _compound_or_shape(builder.Shape())
+    return _compound_or_shape(_unify_same_domain(s.wrapped, False))
 
 
 def fill(s: Shape, constraints: Sequence[Shape | VectorLike] = ()) -> Shape:
